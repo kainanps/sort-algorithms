@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualização Merge Sort</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 5px; }
+        p { color: #aaa; margin-bottom: 20px; }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #9c27b0; /* Roxo para diferenciar */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 0 5px;
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        #container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 400px;
+            width: 90%;
+            border-bottom: 2px solid #555;
+            padding: 0 10px;
+        }
+
+        .bar {
+            width: 8px;
+            margin: 0 1px;
+            background-color: cyan;
+        }
+
+        /* Estados visuais */
+        .active-range { background-color: yellow !important; } /* O bloco que está sendo misturado agora */
+        .merging { background-color: red !important; }        /* A barra sendo sobrescrita no momento */
+        .sorted { background-color: limegreen !important; }   /* Parte ordenada (temporária ou final) */
+    </style>
+</head>
+<body>
+
+    <h1>Visualização Merge Sort</h1>
+    <p>Observe como pequenos grupos ordenados se fundem para formar grupos maiores.</p>
+    
+    <div class="controls">
+        <button onclick="gerarArray()">Gerar Novas Barras</button>
+        <button onclick="iniciarSort()" id="btnOrdenar">Iniciar Merge Sort</button>
+    </div>
+
+    <div id="container"></div>
+
+    <script>
+        const container = document.getElementById("container");
+        const btnOrdenar = document.getElementById("btnOrdenar");
+        let array = [];
+        const delayMs = 15; // Velocidade da animação
+
+        function gerarArray() {
+            array = [];
+            for (let i = 1; i <= 100; i++) {
+                array.push(i);
+            }
+            // Shuffle
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            desenharBarras();
+            btnOrdenar.disabled = false;
+        }
+
+        function desenharBarras() {
+            container.innerHTML = "";
+            array.forEach(valor => {
+                const bar = document.createElement("div");
+                bar.classList.add("bar");
+                bar.style.height = `${valor * 3.5}px`; 
+                container.appendChild(bar);
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function iniciarSort() {
+            btnOrdenar.disabled = true;
+            const barras = document.getElementsByClassName("bar");
+            await mergeSort(array, 0, array.length - 1, barras);
+            
+            // Garante que tudo fique verde no final
+            for(let i=0; i < barras.length; i++){
+                barras[i].classList.remove("active-range", "merging");
+                barras[i].classList.add("sorted");
+                await sleep(5);
+            }
+            btnOrdenar.disabled = false;
+        }
+
+        // Função Principal Recursiva
+        async function mergeSort(arr, inicio, fim, barras) {
+            if (inicio >= fim) {
+                return;
+            }
+
+            const meio = Math.floor((inicio + fim) / 2);
+
+            // Chama recursivamente para a metade esquerda
+            await mergeSort(arr, inicio, meio, barras);
+            // Chama recursivamente para a metade direita
+            await mergeSort(arr, meio + 1, fim, barras);
+            
+            // Faz a fusão (Merge) das duas metades
+            await merge(arr, inicio, meio, fim, barras);
+        }
+
+        // Função que junta duas metades ordenadas
+        async function merge(arr, inicio, meio, fim, barras) {
+            
+            // Arrays temporários para auxiliar
+            let n1 = meio - inicio + 1;
+            let n2 = fim - meio;
+            
+            let esquerda = new Array(n1);
+            let direita = new Array(n2);
+
+            // Copia dados para arrays temporários
+            for (let i = 0; i < n1; i++) esquerda[i] = arr[inicio + i];
+            for (let j = 0; j < n2; j++) direita[j] = arr[meio + 1 + j];
+
+            let i = 0; // Índice inicial do sub-array esquerdo
+            let j = 0; // Índice inicial do sub-array direito
+            let k = inicio; // Índice inicial do array fundido
+
+            // Visualização: Pinta o intervalo atual de amarelo
+            for (let x = inicio; x <= fim; x++) {
+                barras[x].classList.add("active-range");
+            }
+
+            while (i < n1 && j < n2) {
+                await sleep(delayMs);
+                
+                // Visualização: destaca a barra que será sobrescrita
+                barras[k].classList.add("merging");
+
+                if (esquerda[i] <= direita[j]) {
+                    arr[k] = esquerda[i];
+                    barras[k].style.height = `${arr[k] * 3.5}px`;
+                    i++;
+                } else {
+                    arr[k] = direita[j];
+                    barras[k].style.height = `${arr[k] * 3.5}px`;
+                    j++;
+                }
+                
+                // Remove destaque vermelho
+                await sleep(delayMs);
+                barras[k].classList.remove("merging");
+                k++;
+            }
+
+            // Copia os elementos restantes da esquerda, se houver
+            while (i < n1) {
+                await sleep(delayMs);
+                barras[k].classList.add("merging");
+                
+                arr[k] = esquerda[i];
+                barras[k].style.height = `${arr[k] * 3.5}px`;
+                
+                await sleep(delayMs);
+                barras[k].classList.remove("merging");
+                i++;
+                k++;
+            }
+
+            // Copia os elementos restantes da direita, se houver
+            while (j < n2) {
+                await sleep(delayMs);
+                barras[k].classList.add("merging");
+
+                arr[k] = direita[j];
+                barras[k].style.height = `${arr[k] * 3.5}px`;
+
+                await sleep(delayMs);
+                barras[k].classList.remove("merging");
+                j++;
+                k++;
+            }
+
+            // Limpa a cor amarela do intervalo processado
+            for (let x = inicio; x <= fim; x++) {
+                barras[x].classList.remove("active-range");
+            }
+        }
+
+        gerarArray();
+    </script>
+</body>
+</html>
