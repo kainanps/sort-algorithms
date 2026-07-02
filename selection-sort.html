@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Selection Sort com Painel de Status</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212; /* Fundo escuro */
+            color: #ffffff;
+            margin: 0;
+            padding: 30px;
+        }
+
+        /* Container das Barras */
+        #container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 300px;
+            width: 100%;
+            max-width: 900px;
+            border-bottom: 2px solid #333;
+            padding: 0 10px;
+            margin-bottom: 20px;
+        }
+
+        .bar {
+            width: 8px;
+            margin: 0 1px;
+            background-color: #00e676; /* Verde vibrante */
+            border-radius: 2px 2px 0 0;
+        }
+
+        /* Cores de status das barras */
+        .comparing { background-color: #ffeb3b !important; } /* Amarelo: sendo comparado */
+        .min-val { background-color: #f44336 !important; }   /* Vermelho: menor valor atual */
+        .sorted { background-color: #00c853 !important; }    /* Verde escuro: ordenado */
+
+        /* Painel de Estatísticas */
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-panel div {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stats-title {
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .stats-value {
+            font-size: 16px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        /* Controles Inferiores */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .slider-value-box {
+            background-color: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        input[type=range] {
+            accent-color: #fff;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #3a3a3a;
+        }
+
+        button:disabled {
+            color: #666;
+            cursor: not-allowed;
+            border-color: #333;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container"></div>
+
+    <div class="stats-panel">
+        <div>
+            <span class="stats-title">Status</span>
+            <span class="stats-value" id="statusText">Aguardando</span>
+        </div>
+        <div>
+            <span class="stats-title">Comparações</span>
+            <span class="stats-value" id="compText">0</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="slider-group">
+            <label for="speedSlider">Velocidade (ms)</label>
+            <input type="range" id="speedSlider" min="1" max="100" value="1">
+            <div class="slider-value-box" id="speedDisplay">1</div>
+        </div>
+        
+        <button onclick="gerarArray()" id="btnGerar">Gerar Novas Barras</button>
+        <button onclick="iniciarSort()" id="btnOrdenar" class="btn-primary">Iniciar Ordenação</button>
+    </div>
+
+    <script>
+        const container = document.getElementById("container");
+        const statusText = document.getElementById("statusText");
+        const compText = document.getElementById("compText");
+        const speedSlider = document.getElementById("speedSlider");
+        const speedDisplay = document.getElementById("speedDisplay");
+        const btnGerar = document.getElementById("btnGerar");
+        const btnOrdenar = document.getElementById("btnOrdenar");
+
+        let array = [];
+        let numComparacoes = 0;
+        let stopSort = false;
+
+        // Atualiza o display da velocidade quando o slider é movido
+        speedSlider.addEventListener("input", function() {
+            speedDisplay.innerText = this.value;
+        });
+
+        // Retorna o valor atual do slider dinamicamente
+        function getDelay() {
+            return parseInt(speedSlider.value);
+        }
+
+        function gerarArray() {
+            array = [];
+            numComparacoes = 0;
+            compText.innerText = "0";
+            statusText.innerText = "Aguardando";
+            statusText.style.color = "#ffffff";
+            
+            for (let i = 1; i <= 100; i++) {
+                array.push(i);
+            }
+            
+            // Embaralha o array
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            
+            desenharBarras();
+            btnOrdenar.disabled = false;
+        }
+
+        function desenharBarras() {
+            container.innerHTML = "";
+            array.forEach(valor => {
+                const bar = document.createElement("div");
+                bar.classList.add("bar");
+                bar.style.height = `${valor * 2.8}px`; // Escala para caber no container
+                container.appendChild(bar);
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function iniciarSort() {
+            btnGerar.disabled = true;
+            btnOrdenar.disabled = true;
+            statusText.innerText = "Ordenando...";
+            statusText.style.color = "#ffeb3b"; // Amarelo enquanto trabalha
+            
+            const barras = document.getElementsByClassName("bar");
+            await selectionSort(array, barras);
+            
+            statusText.innerText = "Concluído";
+            statusText.style.color = "#00e676"; // Verde ao finalizar
+            btnGerar.disabled = false;
+        }
+
+        // Lógica do Selection Sort com contador de comparações
+        async function selectionSort(arr, barras) {
+            const n = arr.length;
+            
+            for (let i = 0; i < n - 1; i++) {
+                let minIndex = i;
+                barras[minIndex].classList.add("min-val");
+
+                for (let j = i + 1; j < n; j++) {
+                    barras[j].classList.add("comparing");
+                    
+                    // Contabiliza a comparação na interface
+                    numComparacoes++;
+                    compText.innerText = numComparacoes;
+
+                    // Pausa dinâmica baseada no slider
+                    await sleep(getDelay());
+
+                    if (arr[j] < arr[minIndex]) {
+                        barras[minIndex].classList.remove("min-val");
+                        minIndex = j;
+                        barras[minIndex].classList.add("min-val");
+                    }
+                    
+                    barras[j].classList.remove("comparing");
+                }
+
+                if (minIndex !== i) {
+                    // Troca os valores no array
+                    [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+                    
+                    // Troca as alturas visualmente
+                    barras[i].style.height = `${arr[i] * 2.8}px`;
+                    barras[minIndex].style.height = `${arr[minIndex] * 2.8}px`;
+                }
+
+                barras[minIndex].classList.remove("min-val");
+                barras[i].classList.add("sorted");
+            }
+            
+            // Marca o último como ordenado
+            barras[n - 1].classList.add("sorted");
+        }
+
+        // Inicia com um array pronto na tela
+        gerarArray();
+    </script>
+</body>
+</html>
