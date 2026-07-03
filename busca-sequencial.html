@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca Sequencial (Linear)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-info {
+            max-width: 900px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-info h1 {
+            margin: 0 0 10px 0;
+            color: #2196f3; /* Azul para algoritmos de busca */
+        }
+
+        .header-info p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        .fcc-tip {
+            display: inline-block;
+            background-color: #1a2a3a;
+            color: #64b5f6;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 12px;
+            border: 1px solid #2196f3;
+        }
+
+        /* Seção do Alvo (Target) */
+        .target-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .target-label {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .target-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 60px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 24px;
+            color: #fff;
+            background-color: #2196f3;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+            border: 2px solid #64b5f6;
+        }
+
+        /* Seção do Array */
+        .array-section {
+            width: 100%;
+            max-width: 1000px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            border: 1px solid #333;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* Estilo dos Cartões do Array */
+        .card-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #ccc;
+            background-color: #2c3e50;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .index-label {
+            font-size: 11px;
+            color: #666;
+        }
+
+        /* Estados Visuais da Busca */
+        .checking {
+            background-color: #ffeb3b !important;
+            color: #000 !important;
+            transform: scale(1.15) translateY(-5px);
+            border-color: #fbc02d;
+            box-shadow: 0 5px 15px rgba(255, 235, 59, 0.4);
+            z-index: 10;
+        }
+
+        .not-match {
+            background-color: #331414 !important; /* Vermelho escuro/apagado */
+            color: #555 !important;
+            border-color: #4a1f1f;
+            opacity: 0.7;
+        }
+
+        .found {
+            background-color: #00c853 !important;
+            color: #fff !important;
+            transform: scale(1.2);
+            border-color: #69f0ae;
+            box-shadow: 0 0 20px rgba(0, 200, 83, 0.6);
+            z-index: 10;
+        }
+
+        /* Painel de Estatísticas */
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 800px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .stats-panel div {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stats-title { color: #aaa; font-size: 14px; }
+        .stats-value { font-size: 16px; font-family: monospace; font-weight: bold; }
+        
+        .status-searching { color: #ffeb3b; }
+        .status-found { color: #00c853; }
+        .status-not-found { color: #f44336; }
+
+        /* Controles Inferiores */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 900px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .slider-value-box {
+            background-color: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        input[type=range] { accent-color: #2196f3; cursor: pointer; }
+
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) { background-color: #3a3a3a; }
+        button:disabled { color: #666; cursor: not-allowed; border-color: #333; }
+        
+        .btn-primary { background-color: #2196f3; border: none; font-weight: bold;}
+        .btn-primary:hover:not(:disabled) { background-color: #1976d2; }
+        .btn-secondary { background-color: #ff9800; border: none; color: #000; font-weight: bold;}
+        .btn-secondary:hover:not(:disabled) { background-color: #f57c00; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-info">
+        <h1>Visualização: Busca Sequencial (Linear)</h1>
+        <p>O algoritmo verifica cada elemento da lista, um a um, do início ao fim, até encontrar o alvo procurado. Não exige que a lista esteja ordenada.</p>
+        <div class="fcc-tip">📝 Dica FCC: Complexidade de Tempo no Pior Caso é O(N). No Melhor Caso é O(1).</div>
+    </div>
+
+    <!-- Alvo a ser buscado -->
+    <div class="target-section">
+        <div class="target-label">Alvo Procurado</div>
+        <div class="target-card" id="targetCard">?</div>
+    </div>
+
+    <!-- Array de Busca -->
+    <div class="array-section" id="arrayContainer">
+        <!-- Preenchido via JS -->
+    </div>
+
+    <!-- Painel de Estatísticas -->
+    <div class="stats-panel">
+        <div>
+            <span class="stats-title">Status</span>
+            <span class="stats-value" id="statusText">Aguardando</span>
+        </div>
+        <div>
+            <span class="stats-title">Índice Atual ( i )</span>
+            <span class="stats-value" id="indexText">-</span>
+        </div>
+        <div>
+            <span class="stats-title">Comparações Feitas</span>
+            <span class="stats-value" id="compText">0</span>
+        </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="controls">
+        <div class="slider-group">
+            <label for="speedSlider">Velocidade</label>
+            <input type="range" id="speedSlider" min="50" max="1000" value="400">
+            <div class="slider-value-box" id="speedDisplay">400ms</div>
+        </div>
+        
+        <button onclick="gerarArray()" id="btnGerar">1. Gerar Nova Lista</button>
+        <button onclick="sortearAlvo()" id="btnSortear" class="btn-secondary">2. Sortear Alvo</button>
+        <button onclick="iniciarBusca()" id="btnBuscar" class="btn-primary" disabled>3. Iniciar Busca</button>
+    </div>
+
+    <script>
+        const arrayContainer = document.getElementById("arrayContainer");
+        const targetCard = document.getElementById("targetCard");
+        
+        const statusText = document.getElementById("statusText");
+        const indexText = document.getElementById("indexText");
+        const compText = document.getElementById("compText");
+        
+        const speedSlider = document.getElementById("speedSlider");
+        const speedDisplay = document.getElementById("speedDisplay");
+        
+        const btnGerar = document.getElementById("btnGerar");
+        const btnSortear = document.getElementById("btnSortear");
+        const btnBuscar = document.getElementById("btnBuscar");
+
+        let array = [];
+        let domCards = [];
+        let alvoAtual = null;
+        let numComparacoes = 0;
+        const N = 20; // Quantidade de números na lista
+
+        // Atualiza display de velocidade
+        speedSlider.addEventListener("input", function() {
+            speedDisplay.innerText = this.value + "ms";
+        });
+
+        function getDelay() {
+            return parseInt(speedSlider.value);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function gerarArray() {
+            array = [];
+            domCards = [];
+            arrayContainer.innerHTML = "";
+            alvoAtual = null;
+            targetCard.innerText = "?";
+            
+            // Reseta painel
+            numComparacoes = 0;
+            compText.innerText = "0";
+            indexText.innerText = "-";
+            statusText.innerText = "Lista Gerada";
+            statusText.className = "stats-value";
+            
+            // Gera lista desordenada
+            for (let i = 0; i < N; i++) {
+                // Números aleatórios entre 1 e 99
+                array.push(Math.floor(Math.random() * 99) + 1);
+            }
+            
+            // Renderiza na tela
+            array.forEach((val, index) => {
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("card-wrapper");
+                
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.innerText = val;
+                
+                const label = document.createElement("div");
+                label.classList.add("index-label");
+                label.innerText = `[${index}]`;
+                
+                wrapper.appendChild(card);
+                wrapper.appendChild(label);
+                arrayContainer.appendChild(wrapper);
+                
+                domCards.push(card); // Salva referência do DOM
+            });
+            
+            btnBuscar.disabled = true; // Só pode buscar após sortear um alvo
+        }
+
+        function sortearAlvo() {
+            if (array.length === 0) return;
+            
+            // Reseta estilos de buscas anteriores
+            domCards.forEach(card => {
+                card.classList.remove("checking", "found", "not-match");
+            });
+            numComparacoes = 0;
+            compText.innerText = "0";
+            indexText.innerText = "-";
+            statusText.innerText = "Alvo Definido";
+            statusText.className = "stats-value";
+
+            // Para fins didáticos: 80% de chance de sortear algo que ESTÁ na lista
+            // e 20% de chance de sortear algo que NÃO ESTÁ (para mostrar o Pior Caso - O(N))
+            const sorteio = Math.random();
+            
+            if (sorteio > 0.2) {
+                // Pega um item que existe na lista
+                const randomIndex = Math.floor(Math.random() * array.length);
+                alvoAtual = array[randomIndex];
+            } else {
+                // Pega um item improvável/falso
+                alvoAtual = Math.floor(Math.random() * 99) + 100; // Será >= 100
+            }
+            
+            targetCard.innerText = alvoAtual;
+            btnBuscar.disabled = false;
+        }
+
+        // === ALGORITMO DE BUSCA SEQUENCIAL (LINEAR) ===
+        async function iniciarBusca() {
+            if (alvoAtual === null) return;
+            
+            btnGerar.disabled = true;
+            btnSortear.disabled = true;
+            btnBuscar.disabled = true;
+            
+            statusText.innerText = "Buscando...";
+            statusText.className = "stats-value status-searching";
+            
+            let encontrado = false;
+
+            // Percorre de i=0 até N-1
+            for (let i = 0; i < array.length; i++) {
+                indexText.innerText = i;
+                
+                // 1. Destaca o elemento atual que está sendo verificado
+                domCards[i].classList.add("checking");
+                
+                numComparacoes++;
+                compText.innerText = numComparacoes;
+                
+                await sleep(getDelay()); // Pausa visual
+                
+                // 2. Compara
+                if (array[i] === alvoAtual) {
+                    // É O ALVO! (Match)
+                    domCards[i].classList.remove("checking");
+                    domCards[i].classList.add("found");
+                    
+                    statusText.innerText = "Alvo Encontrado!";
+                    statusText.className = "stats-value status-found";
+                    encontrado = true;
+                    break; // Para a busca, já achamos.
+                } else {
+                    // NÃO É O ALVO
+                    domCards[i].classList.remove("checking");
+                    domCards[i].classList.add("not-match"); // Pinta de escuro para mostrar que já verificou e descartou
+                }
+            }
+
+            if (!encontrado) {
+                statusText.innerText = "Alvo não existe na lista";
+                statusText.className = "stats-value status-not-found";
+                // Mostra que verificou exatamente N vezes (O(N) - Pior Caso)
+            }
+
+            btnGerar.disabled = false;
+            btnSortear.disabled = false;
+        }
+
+        // Inicializa a tela com o arrays
+        gerarArray();
+    </script>
+</body>
+</html>
