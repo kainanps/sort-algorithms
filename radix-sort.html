@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radix Sort - Visualização Ideal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-info {
+            max-width: 900px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-info h1 {
+            margin: 0 0 10px 0;
+            color: #e91e63; /* Rosa para diferenciar */
+        }
+
+        .header-info p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        .fcc-tip {
+            display: inline-block;
+            background-color: #331420;
+            color: #ff80ab;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 12px;
+            border: 1px solid #e91e63;
+        }
+
+        /* Seção do Array Principal */
+        .main-array-section {
+            width: 100%;
+            max-width: 1000px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            border: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 90px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .array-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            min-height: 45px;
+        }
+
+        /* Seção dos Baldes (Buckets) 0 a 9 */
+        .buckets-section {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 1000px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .bucket {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a;
+            border: 2px dashed #444;
+            border-radius: 8px;
+            min-height: 200px;
+            padding: 10px 5px;
+            position: relative;
+        }
+        
+        .bucket.active-bucket {
+            border-color: #e91e63;
+            background-color: #2a111a;
+        }
+
+        .bucket-label {
+            position: absolute;
+            bottom: -30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #888;
+            background-color: #222;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid #444;
+        }
+        
+        .bucket.active-bucket .bucket-label {
+            color: #fff;
+            background-color: #e91e63;
+            border-color: #ff80ab;
+            box-shadow: 0 0 10px #e91e63;
+        }
+
+        .bucket-items {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            align-items: center;
+        }
+
+        /* Estilo dos Cartões Numéricos */
+        .card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 35px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #aaa; /* Cor suave por padrão */
+            background-color: #2c3e50;
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            letter-spacing: 2px;
+        }
+
+        /* Destaques visuais */
+        .active-card {
+            background-color: #ff9800 !important;
+            color: #fff;
+            transform: scale(1.15);
+            box-shadow: 0 4px 12px rgba(255,152,0,0.5);
+            z-index: 10;
+        }
+
+        .sorted-card {
+            background-color: #00c853 !important;
+            color: white;
+            border: none;
+        }
+
+        /* Destaque do dígito específico sendo lido */
+        .digit-highlight {
+            color: #fff;
+            font-size: 1.2em;
+            text-shadow: 0 0 5px #fff;
+        }
+        .active-card .digit-highlight {
+            color: #121212;
+            text-shadow: none;
+        }
+
+        /* Painel de Estatísticas */
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 800px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            text-align: center;
+            margin-top: 40px; /* Espaço para as labels dos buckets */
+        }
+
+        .stats-panel div {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stats-title { color: #aaa; font-size: 14px; }
+        .stats-value { font-size: 16px; font-family: monospace; font-weight: bold; }
+        .highlight-zero { color: #00c853; } 
+
+        /* Controles Inferiores */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .slider-value-box {
+            background-color: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        input[type=range] { accent-color: #e91e63; cursor: pointer; }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) { background-color: #3a3a3a; }
+        button:disabled { color: #666; cursor: not-allowed; border-color: #333; }
+        
+        .btn-primary { background-color: #e91e63; border: none; color: #fff; font-weight: bold;}
+        .btn-primary:hover:not(:disabled) { background-color: #c2185b; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-info">
+        <h1>Visualização Radix Sort</h1>
+        <p>O Radix Sort distribui os elementos em <strong>Baldes (Buckets)</strong> baseando-se em um dígito por vez. O método clássico é o <strong>LSD (Least Significant Digit)</strong>: começamos ordenando pela casa das Unidades, depois Dezenas e depois Centenas.</p>
+        <div class="fcc-tip">📝 Dica FCC: Radix Sort é Estável, Não-Comparativo e complexidade de tempo é O(d(N+K))</div>
+    </div>
+
+    <!-- Array Principal -->
+    <div class="main-array-section">
+        <div class="section-title" id="faseTitle">Array Principal</div>
+        <div class="array-container" id="mainArrayContainer"></div>
+    </div>
+
+    <!-- Baldes 0 a 9 -->
+    <div class="buckets-section" id="bucketsSection">
+        <!-- Gerados via JS -->
+    </div>
+
+    <div class="stats-panel">
+        <div>
+            <span class="stats-title">Dígito Atual</span>
+            <span class="stats-value" id="digitText">Nenhum</span>
+        </div>
+        <div>
+            <span class="stats-title">Operações (Distribuição/Coleta)</span>
+            <span class="stats-value" id="opsText">0</span>
+        </div>
+        <div>
+            <span class="stats-title">Comparações entre Elementos</span>
+            <span class="stats-value highlight-zero" id="compText">0 (Sempre Zero!)</span> 
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="slider-group">
+            <label for="speedSlider">Velocidade (ms)</label>
+            <input type="range" id="speedSlider" min="50" max="800" value="300">
+            <div class="slider-value-box" id="speedDisplay">300</div>
+        </div>
+        
+        <button onclick="gerarArray()" id="btnGerar">Gerar Novos Números</button>
+        <button onclick="iniciarSort()" id="btnOrdenar" class="btn-primary">Iniciar Radix Sort</button>
+    </div>
+
+    <script>
+        const mainContainer = document.getElementById("mainArrayContainer");
+        const bucketsSection = document.getElementById("bucketsSection");
+        const faseTitle = document.getElementById("faseTitle");
+        
+        const digitText = document.getElementById("digitText");
+        const opsText = document.getElementById("opsText");
+        const speedSlider = document.getElementById("speedSlider");
+        const speedDisplay = document.getElementById("speedDisplay");
+        const btnGerar = document.getElementById("btnGerar");
+        const btnOrdenar = document.getElementById("btnOrdenar");
+
+        let array = [];
+        let numOperacoes = 0;
+        const N = 15; // Quantidade de números
+        const BASE = 10; // Base decimal (0-9)
+
+        speedSlider.addEventListener("input", function() {
+            speedDisplay.innerText = this.value;
+        });
+
+        function getDelay() {
+            return parseInt(speedSlider.value);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function updateOps() {
+            numOperacoes++;
+            opsText.innerText = numOperacoes;
+        }
+
+        // Formata número com zeros à esquerda (ex: 45 -> "045")
+        function padNum(num) {
+            return String(num).padStart(3, '0');
+        }
+
+        // Gera o HTML do card destacando o dígito específico
+        // place: 0 = unidade, 1 = dezena, 2 = centena. Se -1, não destaca.
+        function createCardHTML(num, place = -1) {
+            const strNum = padNum(num);
+            if (place === -1) return strNum;
+            
+            // O índice na string é reverso ao valor matemático do place
+            // Unidade (place=0) é strNum[2]
+            // Dezena (place=1) é strNum[1]
+            // Centena (place=2) é strNum[0]
+            const targetIndex = 2 - place;
+            
+            let html = "";
+            for (let i = 0; i < 3; i++) {
+                if (i === targetIndex) {
+                    html += `<span class="digit-highlight">${strNum[i]}</span>`;
+                } else {
+                    html += strNum[i];
+                }
+            }
+            return html;
+        }
+
+        function gerarArray() {
+            array = [];
+            numOperacoes = 0;
+            opsText.innerText = "0";
+            digitText.innerText = "Aguardando";
+            digitText.style.color = "#ffffff";
+            faseTitle.innerText = "Array Principal (Desordenado)";
+            
+            // Gera 15 números aleatórios de 0 a 999
+            for (let i = 0; i < N; i++) {
+                array.push(Math.floor(Math.random() * 1000));
+            }
+            
+            renderContainers();
+            btnOrdenar.disabled = false;
+        }
+
+        function renderContainers() {
+            mainContainer.innerHTML = "";
+            bucketsSection.innerHTML = "";
+
+            // Renderiza Array Principal
+            array.forEach(val => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.innerHTML = createCardHTML(val);
+                // Guarda o valor no dataset para facilitar
+                card.dataset.value = val; 
+                mainContainer.appendChild(card);
+            });
+
+            // Cria os 10 Baldes (0 a 9)
+            for (let i = 0; i < BASE; i++) {
+                const bucket = document.createElement("div");
+                bucket.classList.add("bucket");
+                bucket.id = `bucket-${i}`;
+                
+                const bucketItems = document.createElement("div");
+                bucketItems.classList.add("bucket-items");
+                
+                const label = document.createElement("div");
+                label.classList.add("bucket-label");
+                label.innerText = i;
+                
+                bucket.appendChild(bucketItems);
+                bucket.appendChild(label);
+                bucketsSection.appendChild(bucket);
+            }
+        }
+
+        async function iniciarSort() {
+            btnGerar.disabled = true;
+            btnOrdenar.disabled = true;
+            
+            await radixSort();
+            
+            digitText.innerText = "Ordenação Concluída";
+            digitText.style.color = "#00c853";
+            faseTitle.innerText = "Array Principal (Ordenado)";
+            
+            // Pinta todos de verde no final
+            const cards = mainContainer.querySelectorAll('.card');
+            cards.forEach(card => card.classList.add('sorted-card'));
+            
+            btnGerar.disabled = false;
+        }
+
+        // Obtém o dígito numa posição específica (0 = unidade, 1 = dezena, 2 = centena)
+        function getDigit(num, place) {
+            return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10;
+        }
+
+        // === ALGORITMO RADIX SORT (LSD) ===
+        async function radixSort() {
+            const maxDigits = 3; // Porque limitamos de 000 a 999
+            const placeNames = ["Unidades", "Dezenas", "Centenas"];
+            
+            for (let place = 0; place < maxDigits; place++) {
+                
+                digitText.innerText = `Lendo as ${placeNames[place]}`;
+                digitText.style.color = "#ff9800";
+                faseTitle.innerText = `Fase 1: Distribuindo pelas ${placeNames[place]}`;
+
+                // --- PASSO 1: DISTRIBUIR (SCATTER) ---
+                // Pega todos os cards que estão no container principal
+                let cardsToMove = Array.from(mainContainer.querySelectorAll('.card'));
+                
+                for (let i = 0; i < cardsToMove.length; i++) {
+                    let card = cardsToMove[i];
+                    let val = parseInt(card.dataset.value);
+                    let currDigit = getDigit(val, place);
+                    
+                    // Destaque visual no card e no dígito
+                    card.classList.add('active-card');
+                    card.innerHTML = createCardHTML(val, place);
+                    updateOps();
+                    
+                    // Destaque no balde destino
+                    let targetBucket = document.getElementById(`bucket-${currDigit}`);
+                    targetBucket.classList.add('active-bucket');
+                    
+                    await sleep(getDelay());
+                    
+                    // Move fisicamente o card do mainContainer para o bucket
+                    targetBucket.querySelector('.bucket-items').appendChild(card);
+                    card.classList.remove('active-card');
+                    
+                    await sleep(getDelay() / 2); // Pequena pausa
+                    targetBucket.classList.remove('active-bucket');
+                }
+
+                // --- PASSO 2: COLETAR (GATHER) ---
+                faseTitle.innerText = `Fase 2: Coletando dos Baldes`;
+                digitText.style.color = "#00bcd4";
+                await sleep(getDelay());
+
+                for (let i = 0; i < BASE; i++) {
+                    let bucketItemsContainer = document.getElementById(`bucket-${i}`).querySelector('.bucket-items');
+                    let cardsInBucket = Array.from(bucketItemsContainer.querySelectorAll('.card'));
+                    
+                    if (cardsInBucket.length > 0) {
+                        document.getElementById(`bucket-${i}`).classList.add('active-bucket');
+                    }
+
+                    for (let j = 0; j < cardsInBucket.length; j++) {
+                        let card = cardsInBucket[j];
+                        
+                        card.classList.add('active-card');
+                        updateOps();
+                        await sleep(getDelay() / 2);
+                        
+                        // Move de volta para o array principal
+                        mainContainer.appendChild(card);
+                        
+                        // Remove o destaque do card, mas mantém o highlight do dígito atual até a próxima rodada
+                        card.classList.remove('active-card');
+                    }
+                    
+                    document.getElementById(`bucket-${i}`).classList.remove('active-bucket');
+                }
+                
+                // Pausa antes de ir para o próximo dígito
+                await sleep(getDelay());
+            }
+            
+            // Limpa os highlights dos dígitos após terminar
+            const finalCards = mainContainer.querySelectorAll('.card');
+            finalCards.forEach(card => {
+                let val = parseInt(card.dataset.value);
+                card.innerHTML = createCardHTML(val, -1);
+            });
+        }
+
+        // Inicializa a tela
+        gerarArray();
+    </script>
+</body>
+</html>
