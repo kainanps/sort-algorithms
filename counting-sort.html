@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counting Sort - Visualização Ideal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-info {
+            max-width: 800px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-info h1 {
+            margin: 0 0 10px 0;
+            color: #00bcd4;
+        }
+
+        .header-info p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Estrutura dos três níveis (Arrays) */
+        .array-section {
+            width: 100%;
+            max-width: 900px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            border: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .array-title {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .array-container {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Estilo dos blocos/cartões */
+        .card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 40px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #fff;
+            background-color: #2c3e50;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        /* Rótulo de índice abaixo dos blocos de contagem */
+        .count-card-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .index-label {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .empty-slot {
+            background-color: transparent !important;
+            border: 2px dashed #444;
+            color: transparent;
+        }
+
+        /* Cores de Animação */
+        .active-read { background-color: #ffeb3b !important; color: #000; transform: translateY(-5px); box-shadow: 0 4px 8px rgba(255,235,59,0.3); } /* Amarelo: Lendo valor */
+        .active-write { background-color: #ff9800 !important; color: #fff; transform: scale(1.1); box-shadow: 0 4px 8px rgba(255,152,0,0.3); } /* Laranja: Atualizando valor */
+        .sorted { background-color: #00c853 !important; color: white; border: none; } /* Verde: Posição final */
+
+        /* Painel de Estatísticas */
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-panel div {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stats-title { color: #aaa; font-size: 14px; }
+        .stats-value { font-size: 16px; font-family: monospace; font-weight: bold; }
+        .highlight-zero { color: #ffeb3b; } /* Destaca o zero comparações */
+
+        /* Controles Inferiores */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .slider-value-box {
+            background-color: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        input[type=range] { accent-color: #00bcd4; cursor: pointer; }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) { background-color: #3a3a3a; }
+        button:disabled { color: #666; cursor: not-allowed; border-color: #333; }
+        
+        .btn-primary { background-color: #00bcd4; border: none; color: #000; font-weight: bold;}
+        .btn-primary:hover:not(:disabled) { background-color: #0097a7; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-info">
+        <h1>Visualização Counting Sort</h1>
+        <p>Atenção, futuro servidor! O Counting Sort é um algoritmo <strong>Linear $O(N+K)$</strong> e <strong>Não-Comparativo</strong>. Ele conta as ocorrências, soma os prefixos (para saber as posições) e distribui os itens lendo do fim para o início (garantindo a <strong>Estabilidade</strong>).</p>
+    </div>
+
+    <!-- 1. Array Original (Entrada) -->
+    <div class="array-section">
+        <div class="array-title">1. Array Original (Desordenado)</div>
+        <div class="array-container" id="inputArrayContainer"></div>
+    </div>
+
+    <!-- 2. Array de Contagem (Auxiliar) -->
+    <div class="array-section">
+        <div class="array-title" id="countTitle">2. Array de Contagem (Frequências)</div>
+        <div class="array-container" id="countArrayContainer"></div>
+    </div>
+
+    <!-- 3. Array de Saída (Ordenado) -->
+    <div class="array-section">
+        <div class="array-title">3. Array de Saída (Ordenado)</div>
+        <div class="array-container" id="outputArrayContainer"></div>
+    </div>
+
+    <div class="stats-panel">
+        <div>
+            <span class="stats-title">Status da Fase</span>
+            <span class="stats-value" id="statusText">Aguardando</span>
+        </div>
+        <div>
+            <span class="stats-title">Operações (Acessos)</span>
+            <span class="stats-value" id="opsText">0</span>
+        </div>
+        <div>
+            <span class="stats-title">Comparações</span>
+            <!-- Destaque para o ZERO, pegadinha de prova! -->
+            <span class="stats-value highlight-zero" id="compText">0 !</span> 
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="slider-group">
+            <label for="speedSlider">Velocidade (ms)</label>
+            <input type="range" id="speedSlider" min="10" max="500" value="150">
+            <div class="slider-value-box" id="speedDisplay">150</div>
+        </div>
+        
+        <button onclick="gerarArrays()" id="btnGerar">Gerar Novos Números</button>
+        <button onclick="iniciarSort()" id="btnOrdenar" class="btn-primary">Iniciar Counting Sort</button>
+    </div>
+
+    <script>
+        const inputContainer = document.getElementById("inputArrayContainer");
+        const countContainer = document.getElementById("countArrayContainer");
+        const outputContainer = document.getElementById("outputArrayContainer");
+        
+        const statusText = document.getElementById("statusText");
+        const opsText = document.getElementById("opsText");
+        const countTitle = document.getElementById("countTitle");
+        const speedSlider = document.getElementById("speedSlider");
+        const speedDisplay = document.getElementById("speedDisplay");
+        const btnGerar = document.getElementById("btnGerar");
+        const btnOrdenar = document.getElementById("btnOrdenar");
+
+        let inputArray = [];
+        let countArray = [];
+        let outputArray = [];
+        
+        let domInputCards = [];
+        let domCountCards = [];
+        let domOutputCards = [];
+        
+        let numOperacoes = 0;
+        const N = 20; // Tamanho do array original
+        const K = 9;  // Valor máximo (0 a 9 para facilitar a visualização)
+
+        speedSlider.addEventListener("input", function() {
+            speedDisplay.innerText = this.value;
+        });
+
+        function getDelay() {
+            return parseInt(speedSlider.value);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function updateOps() {
+            numOperacoes++;
+            opsText.innerText = numOperacoes;
+        }
+
+        function gerarArrays() {
+            inputArray = [];
+            countArray = new Array(K + 1).fill(0);
+            outputArray = new Array(N).fill('');
+            numOperacoes = 0;
+            opsText.innerText = "0";
+            
+            statusText.innerText = "Aguardando";
+            statusText.style.color = "#ffffff";
+            countTitle.innerText = "2. Array de Contagem (Frequências)";
+            
+            // Gera 20 números aleatórios de 0 a 9
+            for (let i = 0; i < N; i++) {
+                inputArray.push(Math.floor(Math.random() * (K + 1)));
+            }
+            
+            renderContainers();
+            btnOrdenar.disabled = false;
+        }
+
+        function renderContainers() {
+            // Limpa containers
+            inputContainer.innerHTML = "";
+            countContainer.innerHTML = "";
+            outputContainer.innerHTML = "";
+            
+            domInputCards = [];
+            domCountCards = [];
+            domOutputCards = [];
+
+            // Renderiza Input
+            inputArray.forEach(val => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.innerText = val;
+                inputContainer.appendChild(card);
+                domInputCards.push(card);
+            });
+
+            // Renderiza Count (com rótulos de índice embaixo)
+            for(let i = 0; i <= K; i++) {
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("count-card-wrapper");
+                
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.innerText = "0";
+                
+                const label = document.createElement("div");
+                label.classList.add("index-label");
+                label.innerText = `Índice ${i}`;
+                
+                wrapper.appendChild(card);
+                wrapper.appendChild(label);
+                countContainer.appendChild(wrapper);
+                domCountCards.push(card);
+            }
+
+            // Renderiza Output (espaços vazios)
+            for(let i = 0; i < N; i++) {
+                const card = document.createElement("div");
+                card.classList.add("card", "empty-slot");
+                outputContainer.appendChild(card);
+                domOutputCards.push(card);
+            }
+        }
+
+        async function iniciarSort() {
+            btnGerar.disabled = true;
+            btnOrdenar.disabled = true;
+            
+            await countingSort();
+            
+            statusText.innerText = "Concluído";
+            statusText.style.color = "#00c853";
+            btnGerar.disabled = false;
+        }
+
+        // === ALGORITMO COUNTING SORT ===
+        async function countingSort() {
+            // FASE 1: Contagem de Frequências
+            statusText.innerText = "1/3: Contando Frequências...";
+            statusText.style.color = "#ffeb3b";
+            
+            for (let i = 0; i < N; i++) {
+                let valor = inputArray[i];
+                
+                // Destaque visual: Lê do Input
+                domInputCards[i].classList.add("active-read");
+                updateOps();
+                await sleep(getDelay());
+                
+                // Destaque visual: Escreve no Count array
+                domCountCards[valor].classList.add("active-write");
+                countArray[valor]++;
+                domCountCards[valor].innerText = countArray[valor];
+                updateOps();
+                await sleep(getDelay());
+                
+                // Remove destaques
+                domInputCards[i].classList.remove("active-read");
+                domCountCards[valor].classList.remove("active-write");
+            }
+
+            // FASE 2: Soma de Prefixos (Acumulado)
+            statusText.innerText = "2/3: Calculando Posições (Soma de Prefixos)...";
+            statusText.style.color = "#ff9800";
+            countTitle.innerText = "2. Array de Contagem (Acumulado / Posições)";
+            
+            for (let i = 1; i <= K; i++) {
+                domCountCards[i].classList.add("active-read");
+                domCountCards[i-1].classList.add("active-read"); // Lê o anterior para somar
+                updateOps();
+                await sleep(getDelay());
+                
+                domCountCards[i].classList.remove("active-read");
+                domCountCards[i-1].classList.remove("active-read");
+                
+                countArray[i] += countArray[i - 1];
+                
+                domCountCards[i].classList.add("active-write");
+                domCountCards[i].innerText = countArray[i];
+                updateOps();
+                await sleep(getDelay());
+                
+                domCountCards[i].classList.remove("active-write");
+            }
+
+            // FASE 3: Distribuição (De trás para frente para ser ESTÁVEL)
+            statusText.innerText = "3/3: Distribuindo (Estável: fim para o início)...";
+            statusText.style.color = "#00bcd4";
+            
+            for (let i = N - 1; i >= 0; i--) {
+                let valor = inputArray[i];
+                
+                // Lê do final do Input Array
+                domInputCards[i].classList.add("active-read");
+                updateOps();
+                await sleep(getDelay());
+                
+                // Verifica a posição no Count Array
+                domCountCards[valor].classList.add("active-read");
+                updateOps();
+                await sleep(getDelay());
+                
+                // Calcula posição final (subtrai 1 porque o array é base 0)
+                let posFinal = countArray[valor] - 1;
+                
+                // Escreve no Output Array
+                domOutputCards[posFinal].classList.remove("empty-slot");
+                domOutputCards[posFinal].innerText = valor;
+                domOutputCards[posFinal].classList.add("active-write");
+                updateOps();
+                await sleep(getDelay());
+                
+                // Atualiza o Count Array (decrementa)
+                countArray[valor]--;
+                domCountCards[valor].innerText = countArray[valor];
+                domCountCards[valor].classList.remove("active-read");
+                domCountCards[valor].classList.add("active-write");
+                
+                await sleep(getDelay());
+                
+                // Limpeza e marca como verde (ordenado)
+                domInputCards[i].classList.remove("active-read");
+                domCountCards[valor].classList.remove("active-write");
+                domOutputCards[posFinal].classList.remove("active-write");
+                domOutputCards[posFinal].classList.add("sorted");
+            }
+        }
+
+        // Inicializa a tela com o arrays
+        gerarArrays();
+    </script>
+</body>
+</html>
