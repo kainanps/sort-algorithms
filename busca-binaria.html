@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca Binária</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-info {
+            max-width: 900px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-info h1 {
+            margin: 0 0 10px 0;
+            color: #9c27b0; /* Roxo para Busca Binária */
+        }
+
+        .header-info p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        .fcc-tip {
+            display: inline-block;
+            background-color: #2a0a33;
+            color: #ce93d8;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 12px;
+            border: 1px solid #9c27b0;
+        }
+
+        /* Seção do Alvo (Target) */
+        .target-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .target-label {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .target-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 60px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 24px;
+            color: #fff;
+            background-color: #9c27b0;
+            box-shadow: 0 4px 15px rgba(156, 39, 176, 0.4);
+            border: 2px solid #ce93d8;
+        }
+
+        /* Seção do Array */
+        .array-section {
+            width: 100%;
+            max-width: 1050px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            border: 1px solid #333;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        /* Estilo dos Cartões do Array e seus Rótulos */
+        .card-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            transition: opacity 0.3s ease;
+        }
+
+        .card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #fff;
+            background-color: #2c3e50;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* Rótulos para os ponteiros L, M, R */
+        .pointer-label {
+            font-size: 13px;
+            font-weight: bold;
+            height: 18px; /* Altura fixa para não tremer a interface */
+            color: #fff;
+            display: flex;
+            gap: 3px;
+        }
+        
+        .badge-l { background: #e91e63; padding: 2px 5px; border-radius: 3px; }
+        .badge-m { background: #ff9800; padding: 2px 5px; border-radius: 3px; color: #000; }
+        .badge-r { background: #03a9f4; padding: 2px 5px; border-radius: 3px; }
+
+        /* Estados Visuais da Busca Binária */
+        .active-range {
+            /* Elementos ainda possíveis */
+            opacity: 1;
+        }
+
+        .eliminated {
+            /* Metade descartada */
+            opacity: 0.15;
+            filter: grayscale(100%);
+            transform: scale(0.95);
+        }
+
+        .checking {
+            background-color: #ffeb3b !important; /* O "M" sendo verificado agora */
+            color: #000 !important;
+            transform: scale(1.15) translateY(-5px);
+            border-color: #fbc02d;
+            box-shadow: 0 5px 15px rgba(255, 235, 59, 0.4);
+            z-index: 10;
+        }
+
+        .found {
+            background-color: #00c853 !important;
+            color: #fff !important;
+            transform: scale(1.2);
+            border-color: #69f0ae;
+            box-shadow: 0 0 20px rgba(0, 200, 83, 0.6);
+            z-index: 10;
+        }
+
+        /* Painel de Estatísticas */
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 800px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 15px 0;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .stats-panel div {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stats-title { color: #aaa; font-size: 14px; }
+        .stats-value { font-size: 16px; font-family: monospace; font-weight: bold; }
+        
+        .status-searching { color: #ffeb3b; }
+        .status-found { color: #00c853; }
+        .status-not-found { color: #f44336; }
+
+        /* Controles Inferiores */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 900px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .slider-value-box {
+            background-color: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        input[type=range] { accent-color: #9c27b0; cursor: pointer; }
+
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) { background-color: #3a3a3a; }
+        button:disabled { color: #666; cursor: not-allowed; border-color: #333; }
+        
+        .btn-primary { background-color: #9c27b0; border: none; font-weight: bold;}
+        .btn-primary:hover:not(:disabled) { background-color: #7b1fa2; }
+        .btn-secondary { background-color: #ff9800; border: none; color: #000; font-weight: bold;}
+        .btn-secondary:hover:not(:disabled) { background-color: #f57c00; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-info">
+        <h1>Visualização: Busca Binária</h1>
+        <p>A Busca Binária requer um <strong>vetor ordenado</strong>. Ela funciona como procurar uma palavra num dicionário: você abre no meio (M), verifica se a palavra está antes ou depois, e descarta a outra metade inteira instantaneamente, ajustando os ponteiros de Esquerda (L) e Direita (R).</p>
+        <div class="fcc-tip">📝 Dica FCC: Complexidade de Tempo O(log N). Muito mais eficiente que a linear para listas grandes!</div>
+    </div>
+
+    <!-- Alvo a ser buscado -->
+    <div class="target-section">
+        <div class="target-label">Alvo Procurado</div>
+        <div class="target-card" id="targetCard">?</div>
+    </div>
+
+    <!-- Array de Busca -->
+    <div class="array-section" id="arrayContainer">
+        <!-- Preenchido via JS -->
+    </div>
+
+    <!-- Painel de Estatísticas -->
+    <div class="stats-panel">
+        <div>
+            <span class="stats-title">Status</span>
+            <span class="stats-value" id="statusText">Aguardando</span>
+        </div>
+        <div>
+            <span class="stats-title">Intervalo Atual [L, R]</span>
+            <span class="stats-value" id="rangeText">-</span>
+        </div>
+        <div>
+            <span class="stats-title">Comparações (Divisões)</span>
+            <span class="stats-value" id="compText">0</span>
+        </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="controls">
+        <div class="slider-group">
+            <label for="speedSlider">Velocidade</label>
+            <input type="range" id="speedSlider" min="100" max="1500" value="800">
+            <div class="slider-value-box" id="speedDisplay">800ms</div>
+        </div>
+        
+        <button onclick="gerarArray()" id="btnGerar">1. Gerar Lista Ordenada</button>
+        <button onclick="sortearAlvo()" id="btnSortear" class="btn-secondary">2. Sortear Alvo</button>
+        <button onclick="iniciarBusca()" id="btnBuscar" class="btn-primary" disabled>3. Iniciar Busca</button>
+    </div>
+
+    <script>
+        const arrayContainer = document.getElementById("arrayContainer");
+        const targetCard = document.getElementById("targetCard");
+        
+        const statusText = document.getElementById("statusText");
+        const rangeText = document.getElementById("rangeText");
+        const compText = document.getElementById("compText");
+        
+        const speedSlider = document.getElementById("speedSlider");
+        const speedDisplay = document.getElementById("speedDisplay");
+        
+        const btnGerar = document.getElementById("btnGerar");
+        const btnSortear = document.getElementById("btnSortear");
+        const btnBuscar = document.getElementById("btnBuscar");
+
+        let array = [];
+        let domCards = [];
+        let domLabels = [];
+        let alvoAtual = null;
+        let numComparacoes = 0;
+        
+        // Tamanho 31 é ótimo para Busca Binária visual, pois 31 = 2^5 - 1
+        // (A árvore de decisão é perfeitamente balanceada com 5 níveis)
+        const N = 31; 
+
+        // Atualiza display de velocidade
+        speedSlider.addEventListener("input", function() {
+            speedDisplay.innerText = this.value + "ms";
+        });
+
+        function getDelay() {
+            return parseInt(speedSlider.value);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function gerarArray() {
+            array = [];
+            domCards = [];
+            domLabels = [];
+            arrayContainer.innerHTML = "";
+            alvoAtual = null;
+            targetCard.innerText = "?";
+            
+            numComparacoes = 0;
+            compText.innerText = "0";
+            rangeText.innerText = `[0, ${N - 1}]`;
+            statusText.innerText = "Lista Gerada (Ordenada)";
+            statusText.className = "stats-value";
+            
+            // A Busca Binária EXIGE um array ordenado.
+            // Geramos números crescentes incrementando valores aleatórios curtos para não haver repetições.
+            let valorAtual = 5;
+            for (let i = 0; i < N; i++) {
+                array.push(valorAtual);
+                valorAtual += Math.floor(Math.random() * 5) + 1; // Soma de 1 a 5
+            }
+            
+            // Renderiza na tela
+            array.forEach((val, index) => {
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("card-wrapper");
+                wrapper.id = `wrapper-${index}`;
+                
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.innerText = val;
+                
+                const label = document.createElement("div");
+                label.classList.add("pointer-label");
+                // Inicia vazio
+                label.innerHTML = ""; 
+                
+                wrapper.appendChild(card);
+                wrapper.appendChild(label);
+                arrayContainer.appendChild(wrapper);
+                
+                domCards.push(card); 
+                domLabels.push(label);
+            });
+            
+            btnBuscar.disabled = true; 
+        }
+
+        function sortearAlvo() {
+            if (array.length === 0) return;
+            
+            // Limpa as marcas visuais antigas
+            limparVisuais();
+            
+            numComparacoes = 0;
+            compText.innerText = "0";
+            rangeText.innerText = `[0, ${N - 1}]`;
+            statusText.innerText = "Alvo Definido";
+            statusText.className = "stats-value";
+
+            // 80% de chance de existir, 20% de não existir
+            const sorteio = Math.random();
+            
+            if (sorteio > 0.2) {
+                const randomIndex = Math.floor(Math.random() * array.length);
+                alvoAtual = array[randomIndex];
+            } else {
+                // Alvo que não existe (Ex: Pega o valor do meio e soma 1, garantindo que "cai no buraco")
+                alvoAtual = array[15] + 1; 
+            }
+            
+            targetCard.innerText = alvoAtual;
+            btnBuscar.disabled = false;
+        }
+
+        function limparVisuais() {
+            for(let i=0; i<N; i++){
+                domCards[i].className = "card active-range";
+                document.getElementById(`wrapper-${i}`).className = "card-wrapper active-range";
+                domLabels[i].innerHTML = "";
+            }
+        }
+
+        // Função auxiliar para atualizar as tags L, M e R embaixo dos cards
+        function updatePointers(L, R, M) {
+            for(let i=0; i<N; i++) {
+                domLabels[i].innerHTML = "";
+                let badges = "";
+                
+                // Se estiver dentro da área válida, mostra os ponteiros
+                if (i >= L && i <= R) {
+                    if (i === L) badges += `<span class="badge-l">L</span>`;
+                    if (i === M) badges += `<span class="badge-m">M</span>`;
+                    if (i === R) badges += `<span class="badge-r">R</span>`;
+                }
+                domLabels[i].innerHTML = badges;
+                
+                // Apaga visualmente os que estão fora do intervalo (Eliminados)
+                if (i < L || i > R) {
+                    document.getElementById(`wrapper-${i}`).className = "card-wrapper eliminated";
+                }
+            }
+        }
+
+        // === ALGORITMO DE BUSCA BINÁRIA ===
+        async function iniciarBusca() {
+            if (alvoAtual === null) return;
+            
+            btnGerar.disabled = true;
+            btnSortear.disabled = true;
+            btnBuscar.disabled = true;
+            
+            statusText.innerText = "Buscando...";
+            statusText.className = "stats-value status-searching";
+            
+            limparVisuais();
+            
+            let L = 0;
+            let R = array.length - 1;
+            let encontrado = false;
+
+            // O clássico loop da busca binária
+            while (L <= R) {
+                rangeText.innerText = `[${L}, ${R}]`;
+                
+                // Calcula o Meio
+                let M = Math.floor((L + R) / 2);
+                
+                // Atualiza a visualização (Ponteiros L, R e M, e escurece o que foi descartado)
+                updatePointers(L, R, M);
+                
+                // Destaca o Meio que está sendo analisado
+                domCards[M].classList.add("checking");
+                
+                numComparacoes++;
+                compText.innerText = numComparacoes;
+                
+                // Pausa dramática para ver a comparação acontecendo
+                await sleep(getDelay());
+                
+                if (array[M] === alvoAtual) {
+                    // Match!
+                    domCards[M].classList.remove("checking");
+                    domCards[M].classList.add("found");
+                    
+                    statusText.innerText = "Alvo Encontrado!";
+                    statusText.className = "stats-value status-found";
+                    encontrado = true;
+                    break;
+                    
+                } else if (array[M] < alvoAtual) {
+                    // O alvo é maior. Descarta a metade esquerda (inclusive o M)
+                    L = M + 1;
+                    domCards[M].classList.remove("checking");
+                    
+                } else {
+                    // O alvo é menor. Descarta a metade direita (inclusive o M)
+                    R = M - 1;
+                    domCards[M].classList.remove("checking");
+                }
+                
+                // Pausa antes do próximo ciclo
+                await sleep(getDelay() / 2);
+            }
+
+            if (!encontrado) {
+                rangeText.innerText = "Inexistente";
+                // Limpa os ponteiros pois cruzaram
+                for(let i=0; i<N; i++) {
+                    domLabels[i].innerHTML = "";
+                    document.getElementById(`wrapper-${i}`).className = "card-wrapper eliminated";
+                }
+                statusText.innerText = "Alvo não existe na lista";
+                statusText.className = "stats-value status-not-found";
+            }
+
+            btnGerar.disabled = false;
+            btnSortear.disabled = false;
+        }
+
+        // Inicializa a tela com o array
+        gerarArray();
+    </script>
+</body>
+</html>
