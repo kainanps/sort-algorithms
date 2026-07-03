@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heap Sort - Grid de Cartões</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-info {
+            max-width: 800px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-info h1 {
+            margin: 0 0 10px 0;
+            color: #9c27b0;
+        }
+
+        .header-info p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Container do Grid em vez de barras */
+        #container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        /* Estilo de cada "Flashcard" numérico */
+        .card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1; /* Mantém quadrado */
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #fff;
+            transition: transform 0.1s, background-color 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Cores de status das barras/cartões */
+        .heap-root { background-color: #9c27b0 !important; transform: scale(1.1); z-index: 10; } /* Roxo: "Pai" atual sendo avaliado */
+        .comparing { background-color: #ffeb3b !important; color: #000; } /* Amarelo: "Filho" sendo comparado */
+        .swapping { background-color: #f44336 !important; }   /* Vermelho: Trocando de lugar */
+        .sorted { background-color: #00c853 !important; }     /* Verde escuro: Posição final garantida */
+
+        /* Painel de Estatísticas */
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-panel div {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stats-title { color: #aaa; font-size: 14px; }
+        .stats-value { font-size: 16px; font-family: monospace; font-weight: bold; }
+
+        /* Controles Inferiores */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .slider-value-box {
+            background-color: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        input[type=range] { accent-color: #fff; cursor: pointer; }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 20px;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) { background-color: #3a3a3a; }
+        button:disabled { color: #666; cursor: not-allowed; border-color: #333; }
+        
+        .btn-primary { background-color: #9c27b0; border: none; }
+        .btn-primary:hover:not(:disabled) { background-color: #7b1fa2; }
+
+        /* Legenda */
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-box { width: 12px; height: 12px; border-radius: 2px; }
+
+        /* Container da Árvore (Canvas) */
+        .tree-container {
+            width: 100%;
+            max-width: 900px;
+            overflow-x: auto;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 15px 0;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-info">
+        <h1>Visualização Heap Sort</h1>
+        <p>No Heap Sort, os números são tratados mentalmente como uma árvore binária. O algoritmo identifica o maior valor na "árvore" (transformando o array num <i>Max-Heap</i>) e o joga para o final do grid. Adicionamos a <strong>Árvore Binária</strong> abaixo para você ver exatamente quem é "pai" e quem é "filho" interagindo em tempo real!</p>
+    </div>
+
+    <!-- Container da Árvore sincronizada -->
+    <div class="tree-container">
+        <canvas id="treeCanvas" width="1200" height="320"></canvas>
+    </div>
+
+    <!-- O Container agora é um Grid 10x10 em vez de um eixo X de barras -->
+    <div id="container"></div>
+
+    <div class="stats-panel">
+        <div>
+            <span class="stats-title">Status</span>
+            <span class="stats-value" id="statusText">Aguardando</span>
+        </div>
+        <div>
+            <span class="stats-title">Comparações</span>
+            <span class="stats-value" id="compText">0</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="slider-group">
+            <label for="speedSlider">Velocidade (ms)</label>
+            <input type="range" id="speedSlider" min="1" max="100" value="15">
+            <div class="slider-value-box" id="speedDisplay">15</div>
+        </div>
+        
+        <button onclick="gerarArray()" id="btnGerar">Gerar Novos Cartões</button>
+        <button onclick="iniciarSort()" id="btnOrdenar" class="btn-primary">Iniciar Ordenação</button>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-box" style="background: #9c27b0;"></div> Nó Pai (Raiz)</div>
+        <div class="legend-item"><div class="legend-box" style="background: #ffeb3b;"></div> Comparando Filho</div>
+        <div class="legend-item"><div class="legend-box" style="background: #f44336;"></div> Trocando</div>
+        <div class="legend-item"><div class="legend-box" style="background: #00c853;"></div> Ordenado</div>
+    </div>
+
+    <script>
+        const container = document.getElementById("container");
+        const statusText = document.getElementById("statusText");
+        const compText = document.getElementById("compText");
+        const speedSlider = document.getElementById("speedSlider");
+        const speedDisplay = document.getElementById("speedDisplay");
+        const btnGerar = document.getElementById("btnGerar");
+        const btnOrdenar = document.getElementById("btnOrdenar");
+
+        const canvas = document.getElementById("treeCanvas");
+        const ctx = canvas.getContext("2d");
+        let nodePositions = [];
+
+        let array = [];
+        let numComparacoes = 0;
+        let domCards = [];
+
+        speedSlider.addEventListener("input", function() {
+            speedDisplay.innerText = this.value;
+        });
+
+        function getDelay() {
+            return parseInt(speedSlider.value);
+        }
+
+        // Calcula uma cor baseada no valor para ficar bonito (azul escuro para números baixos, azul claro para altos)
+        function getCorBase(valor) {
+            // HSL: Matiz fixa (210 - azul), Saturação 80%, Luminosidade varia de 20% a 70% baseado no valor 1-100
+            const lightness = 20 + (valor / 100) * 50; 
+            return `hsl(210, 80%, ${lightness}%)`;
+        }
+
+        // Funções para Desenhar a Árvore no Canvas
+        function calculateTreePositions() {
+            nodePositions = new Array(array.length);
+            const levelHeight = 45; // Distância vertical entre os níveis da árvore
+            
+            // Função recursiva para dar coordenadas X e Y para cada nó da árvore
+            function traverse(index, minX, maxX, y) {
+                if (index >= array.length) return;
+                const x = (minX + maxX) / 2;
+                nodePositions[index] = { x, y };
+                
+                traverse(2 * index + 1, minX, x, y + levelHeight); // Filho esquerdo
+                traverse(2 * index + 2, x, maxX, y + levelHeight); // Filho direito
+            }
+            traverse(0, 0, canvas.width, 25);
+        }
+
+        function drawTree() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if(array.length === 0 || nodePositions.length !== array.length) return;
+
+            // 1. Desenha as linhas (arestas) primeiro para ficarem atrás dos nós
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#555';
+            for (let i = 0; i < array.length; i++) {
+                const left = 2 * i + 1;
+                const right = 2 * i + 2;
+                
+                if (left < array.length) {
+                    ctx.beginPath();
+                    ctx.moveTo(nodePositions[i].x, nodePositions[i].y);
+                    ctx.lineTo(nodePositions[left].x, nodePositions[left].y);
+                    ctx.stroke();
+                }
+                if (right < array.length) {
+                    ctx.beginPath();
+                    ctx.moveTo(nodePositions[i].x, nodePositions[i].y);
+                    ctx.lineTo(nodePositions[right].x, nodePositions[right].y);
+                    ctx.stroke();
+                }
+            }
+
+            // 2. Desenha as bolinhas (nós)
+            const radius = 7;
+            for (let i = 0; i < array.length; i++) {
+                const pos = nodePositions[i];
+                const card = domCards[i];
+                
+                // Puxa a cor base
+                let fillColor = getCorBase(array[i]);
+                
+                // Lê as classes CSS atuais do Grid para manter a Árvore sincronizada!
+                if (card) {
+                    if (card.classList.contains('swapping')) fillColor = '#f44336';
+                    else if (card.classList.contains('heap-root')) fillColor = '#9c27b0';
+                    else if (card.classList.contains('comparing')) fillColor = '#ffeb3b';
+                    else if (card.classList.contains('sorted')) fillColor = '#00c853';
+                }
+
+                // Pinta o nó
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+                ctx.strokeStyle = '#121212';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        // Loop contínuo que roda a 60 frames por segundo mantendo a árvore e o grid iguais
+        function renderLoop() {
+            drawTree();
+            requestAnimationFrame(renderLoop);
+        }
+        renderLoop();
+
+        function gerarArray() {
+            array = [];
+            numComparacoes = 0;
+            compText.innerText = "0";
+            statusText.innerText = "Aguardando";
+            statusText.style.color = "#ffffff";
+            
+            for (let i = 1; i <= 100; i++) {
+                array.push(i);
+            }
+            
+            // Embaralha o array aleatoriamente
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            
+            desenharCards();
+            calculateTreePositions(); // Recalcula posições da árvore
+            btnOrdenar.disabled = false;
+        }
+
+        function desenharCards() {
+            container.innerHTML = "";
+            domCards = [];
+            array.forEach(valor => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.innerText = valor;
+                card.style.backgroundColor = getCorBase(valor);
+                container.appendChild(card);
+                domCards.push(card);
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Função utilitária para atualizar os dados visuais quando ocorrer uma troca
+        function renderSwap(i, j) {
+            // Troca no array de dados
+            [array[i], array[j]] = [array[j], array[i]];
+            
+            // Troca os textos na tela
+            domCards[i].innerText = array[i];
+            domCards[j].innerText = array[j];
+
+            // Troca as cores base
+            domCards[i].style.backgroundColor = getCorBase(array[i]);
+            domCards[j].style.backgroundColor = getCorBase(array[j]);
+        }
+
+        async function iniciarSort() {
+            btnGerar.disabled = true;
+            btnOrdenar.disabled = true;
+            statusText.innerText = "Construindo Max-Heap...";
+            statusText.style.color = "#ffeb3b"; 
+            
+            await heapSort(array);
+            
+            statusText.innerText = "Concluído";
+            statusText.style.color = "#00e676";
+            btnGerar.disabled = false;
+        }
+
+        // === ALGORITMO HEAP SORT ===
+        async function heapSort(arr) {
+            let n = arr.length;
+
+            // 1. Constrói o Max-Heap (rearranja o array)
+            // Começa do último nó que tem filhos até a raiz (0)
+            for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+                await heapify(arr, n, i);
+            }
+
+            statusText.innerText = "Extraindo elementos...";
+            statusText.style.color = "#00bcd4"; 
+
+            // 2. Extrai os elementos um a um do heap
+            for (let i = n - 1; i > 0; i--) {
+                
+                // Marca a raiz (maior valor atual) e a última posição disponível
+                domCards[0].classList.add("swapping");
+                domCards[i].classList.add("swapping");
+                await sleep(getDelay());
+
+                // Move o maior valor (na raiz 0) para o final do array (i)
+                renderSwap(0, i);
+
+                domCards[0].classList.remove("swapping");
+                domCards[i].classList.remove("swapping");
+                
+                // Como ele foi para a posição final dele, fica verde
+                domCards[i].classList.add("sorted");
+
+                // Chama o heapify na raiz reduzindo o tamanho do heap
+                // para afundar o novo elemento que subiu e achar o próximo maior
+                await heapify(arr, i, 0);
+            }
+            // O último elemento restante já está na posição certa
+            domCards[0].classList.add("sorted");
+        }
+
+        // Função que ajusta a árvore para manter a propriedade de "Max-Heap"
+        async function heapify(arr, n, i) {
+            let largest = i; // Assume que a raiz atual é a maior
+            let left = 2 * i + 1; // Fórmula do filho esquerdo num array
+            let right = 2 * i + 2; // Fórmula do filho direito num array
+
+            domCards[i].classList.add("heap-root");
+
+            // Se o filho esquerdo for maior que a raiz
+            if (left < n) {
+                domCards[left].classList.add("comparing");
+                numComparacoes++;
+                compText.innerText = numComparacoes;
+                await sleep(getDelay());
+                
+                if (arr[left] > arr[largest]) {
+                    largest = left;
+                }
+                domCards[left].classList.remove("comparing");
+            }
+
+            // Se o filho direito for maior que o maior até agora
+            if (right < n) {
+                domCards[right].classList.add("comparing");
+                numComparacoes++;
+                compText.innerText = numComparacoes;
+                await sleep(getDelay());
+
+                if (arr[right] > arr[largest]) {
+                    largest = right;
+                }
+                domCards[right].classList.remove("comparing");
+            }
+
+            // Se o maior valor não for a raiz, nós trocamos
+            if (largest !== i) {
+                domCards[i].classList.add("swapping");
+                domCards[largest].classList.add("swapping");
+                await sleep(getDelay());
+
+                renderSwap(i, largest);
+
+                domCards[i].classList.remove("swapping");
+                domCards[largest].classList.remove("swapping");
+                domCards[i].classList.remove("heap-root");
+
+                // Tenta ajustar a sub-árvore afetada recursivamente
+                await heapify(arr, n, largest);
+            } else {
+                domCards[i].classList.remove("heap-root");
+            }
+        }
+
+        // Inicializa a tela com o grid aleatório
+        gerarArray();
+    </script>
+</body>
+</html>
