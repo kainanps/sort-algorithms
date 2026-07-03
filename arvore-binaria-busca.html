@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Árvore Binária de Busca (BST)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-info {
+            max-width: 900px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-info h1 {
+            margin: 0 0 10px 0;
+            color: #4caf50; /* Verde para Árvores */
+        }
+
+        .header-info p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        .fcc-tip {
+            display: inline-block;
+            background-color: #1b3320;
+            color: #81c784;
+            padding: 8px 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 13px;
+            border: 1px solid #4caf50;
+        }
+
+        /* Container da Árvore (Canvas) */
+        .tree-container {
+            width: 100%;
+            max-width: 1000px;
+            overflow-x: auto;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 15px 0;
+            position: relative;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Painel de Estatísticas */
+        .stats-panel {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 900px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-panel div {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stats-title { color: #aaa; font-size: 14px; }
+        .stats-value { font-size: 16px; font-family: monospace; font-weight: bold; }
+        
+        .status-searching { color: #ffeb3b; }
+        .status-found { color: #00c853; }
+        .status-not-found { color: #f44336; }
+
+        /* Controles Inferiores */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 1000px;
+            justify-content: center;
+            flex-wrap: wrap;
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        input[type=number] {
+            padding: 10px;
+            width: 70px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background-color: #2a2a2a;
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        input[type=number]:focus {
+            outline: none;
+            border-color: #4caf50;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            margin-left: 20px;
+            border-left: 1px solid #444;
+            padding-left: 20px;
+        }
+
+        input[type=range] { accent-color: #4caf50; cursor: pointer; }
+
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        button:hover:not(:disabled) { background-color: #3a3a3a; }
+        button:disabled { color: #666; cursor: not-allowed; border-color: #333; }
+        
+        .btn-insert { background-color: #2196f3; border: none; font-weight: bold;}
+        .btn-insert:hover:not(:disabled) { background-color: #1976d2; }
+        
+        .btn-search { background-color: #4caf50; border: none; font-weight: bold;}
+        .btn-search:hover:not(:disabled) { background-color: #388e3c; }
+
+        .btn-danger { background-color: #f44336; border: none; font-weight: bold;}
+        .btn-danger:hover:not(:disabled) { background-color: #d32f2f; }
+
+        /* Legenda */
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-box { width: 12px; height: 12px; border-radius: 50%; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-info">
+        <h1>Árvore Binária de Busca (BST)</h1>
+        <p>A BST organiza os dados de forma hierárquica. Regra: Tudo à esquerda é <strong>menor</strong>, tudo à direita é <strong>maior</strong>. Essa regra permite descartar metades inteiras da árvore a cada passo, semelhante à Busca Binária.</p>
+        <div class="fcc-tip">📝 Pegadinha FCC: O Pior Caso (O(N)) ocorre quando a árvore vira uma "Lista Encadeada" (Degenerada). Tente gerar uma abaixo!</div>
+    </div>
+
+    <!-- Container da Árvore -->
+    <div class="tree-container">
+        <canvas id="treeCanvas" width="1000" height="450"></canvas>
+    </div>
+
+    <!-- Painel de Estatísticas -->
+    <div class="stats-panel">
+        <div>
+            <span class="stats-title">Status</span>
+            <span class="stats-value" id="statusText">Aguardando interação</span>
+        </div>
+        <div>
+            <span class="stats-title">Comparações no Caminho</span>
+            <span class="stats-value" id="compText">0</span>
+        </div>
+        <div>
+            <span class="stats-title">Altura da Árvore</span>
+            <span class="stats-value" id="heightText">0</span>
+        </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="controls">
+        <div class="input-group">
+            <input type="number" id="nodeValue" placeholder="Valor" min="1" max="999">
+            <button onclick="iniciarInsercao()" id="btnInsert" class="btn-insert">Inserir</button>
+            <button onclick="iniciarBusca()" id="btnSearch" class="btn-search">Buscar</button>
+        </div>
+        
+        <div style="width: 2px; height: 30px; background-color: #444; margin: 0 10px;"></div>
+        
+        <button onclick="gerarAleatoria()" id="btnRandom">Gerar Aleatória (O(log N))</button>
+        <button onclick="gerarDegenerada()" id="btnDegen" class="btn-danger" title="Simula a inserção de elementos já ordenados">Gerar Degenerada (O(N))</button>
+        <button onclick="limparArvore()" id="btnClear">Limpar</button>
+
+        <div class="slider-group">
+            <label for="speedSlider">Velocidade:</label>
+            <input type="range" id="speedSlider" min="100" max="1500" value="600">
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-box" style="background: #2c3e50; border: 2px solid #555;"></div> Nó Padrão</div>
+        <div class="legend-item"><div class="legend-box" style="background: #ffeb3b; border: 2px solid #fbc02d;"></div> Analisando / Caminho</div>
+        <div class="legend-item"><div class="legend-box" style="background: #00c853; border: 2px solid #00e676;"></div> Inserido / Encontrado</div>
+        <div class="legend-item"><div class="legend-box" style="background: #f44336; border: 2px solid #ff5252;"></div> Não Encontrado</div>
+    </div>
+
+    <script>
+        // --- CLASSES DA ÁRVORE ---
+        class Node {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                // Coordenadas visuais
+                this.x = 0;
+                this.y = 0;
+                // Estado visual: 'normal', 'checking', 'found', 'error'
+                this.state = 'normal'; 
+            }
+        }
+
+        class BST {
+            constructor() {
+                this.root = null;
+            }
+            // Retorna a altura para os status
+            getHeight(node) {
+                if (!node) return 0;
+                return 1 + Math.max(this.getHeight(node.left), this.getHeight(node.right));
+            }
+        }
+
+        // --- VARIÁVEIS GLOBAIS E DOM ---
+        const canvas = document.getElementById("treeCanvas");
+        const ctx = canvas.getContext("2d");
+        const bst = new BST();
+        
+        const nodeValueInput = document.getElementById("nodeValue");
+        const statusText = document.getElementById("statusText");
+        const compText = document.getElementById("compText");
+        const heightText = document.getElementById("heightText");
+        const speedSlider = document.getElementById("speedSlider");
+        
+        // Elementos de controle para desativar durante a animação
+        const controls = [
+            document.getElementById("btnInsert"),
+            document.getElementById("btnSearch"),
+            document.getElementById("btnRandom"),
+            document.getElementById("btnDegen"),
+            document.getElementById("btnClear")
+        ];
+
+        let numComparacoes = 0;
+        let isAnimating = false;
+
+        // Configurações Visuais
+        const NODE_RADIUS = 18;
+        const LEVEL_HEIGHT = 60; // Distância vertical entre níveis
+
+        function getDelay() {
+            return parseInt(speedSlider.value);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function setControlsState(disabled) {
+            controls.forEach(btn => btn.disabled = disabled);
+        }
+
+        // --- LÓGICA DE DESENHO NO CANVAS ---
+        
+        // Calcula recursivamente as posições X e Y de cada nó
+        function calculateNodePositions(node, leftBound, rightBound, depth) {
+            if (!node) return;
+            
+            // O nó fica exatamente no meio das fronteiras recebidas
+            node.x = (leftBound + rightBound) / 2;
+            node.y = 40 + (depth * LEVEL_HEIGHT);
+
+            // Ajusta o limite inferior se a árvore crescer muito
+            if (node.y + 50 > canvas.height) {
+                canvas.height = node.y + 100; // Cresce o canvas para baixo
+            }
+
+            // Os filhos dividem o espaço restante pela metade
+            calculateNodePositions(node.left, leftBound, node.x, depth + 1);
+            calculateNodePositions(node.right, node.x, rightBound, depth + 1);
+        }
+
+        function resetVisualStates(node) {
+            if (!node) return;
+            node.state = 'normal';
+            resetVisualStates(node.left);
+            resetVisualStates(node.right);
+        }
+
+        function drawTree() {
+            // Fundo
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (!bst.root) return;
+
+            // Recalcula posições baseadas na largura atual do canvas
+            calculateNodePositions(bst.root, 0, canvas.width, 0);
+
+            // Desenha as ARESTAS (linhas) primeiro (para ficarem atrás dos nós)
+            function drawEdges(node) {
+                if (!node) return;
+                
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#555';
+
+                if (node.left) {
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(node.left.x, node.left.y);
+                    ctx.stroke();
+                    drawEdges(node.left);
+                }
+                
+                if (node.right) {
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(node.right.x, node.right.y);
+                    ctx.stroke();
+                    drawEdges(node.right);
+                }
+            }
+            drawEdges(bst.root);
+
+            // Desenha os NÓS (círculos e textos)
+            function drawNodes(node) {
+                if (!node) return;
+
+                // Define cores baseado no estado
+                let fillColor = '#2c3e50';
+                let strokeColor = '#555';
+                let textColor = '#fff';
+                let radius = NODE_RADIUS;
+
+                if (node.state === 'checking') {
+                    fillColor = '#ffeb3b';
+                    strokeColor = '#fbc02d';
+                    textColor = '#000';
+                    radius = NODE_RADIUS * 1.2;
+                } else if (node.state === 'found') {
+                    fillColor = '#00c853';
+                    strokeColor = '#00e676';
+                    textColor = '#fff';
+                    radius = NODE_RADIUS * 1.2;
+                } else if (node.state === 'error') {
+                    fillColor = '#f44336';
+                    strokeColor = '#ff5252';
+                    textColor = '#fff';
+                    radius = NODE_RADIUS * 1.2;
+                }
+
+                // Círculo
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = strokeColor;
+                ctx.stroke();
+
+                // Texto (Valor)
+                ctx.font = 'bold 14px Arial';
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.value, node.x, node.y);
+
+                drawNodes(node.left);
+                drawNodes(node.right);
+            }
+            drawNodes(bst.root);
+        }
+
+        // Loop de Renderização Contínuo (60FPS)
+        function renderLoop() {
+            drawTree();
+            requestAnimationFrame(renderLoop);
+        }
+        renderLoop(); // Inicia o motor gráfico
+
+        // --- LÓGICA DO ALGORITMO E ANIMAÇÕES ---
+
+        function updateStats() {
+            compText.innerText = numComparacoes;
+            heightText.innerText = bst.getHeight(bst.root);
+        }
+
+        async function iniciarInsercao() {
+            const val = parseInt(nodeValueInput.value);
+            if (isNaN(val)) return;
+
+            setControlsState(true);
+            resetVisualStates(bst.root);
+            numComparacoes = 0;
+            statusText.innerText = `Inserindo ${val}...`;
+            statusText.className = "stats-value status-searching";
+
+            if (!bst.root) {
+                bst.root = new Node(val);
+                statusText.innerText = `Raiz ${val} criada!`;
+                statusText.className = "stats-value status-found";
+                updateStats();
+                setControlsState(false);
+                nodeValueInput.value = "";
+                return;
+            }
+
+            let curr = bst.root;
+            
+            while (true) {
+                curr.state = 'checking';
+                numComparacoes++;
+                updateStats();
+                await sleep(getDelay());
+
+                if (val < curr.value) {
+                    statusText.innerText = `${val} < ${curr.value}. Indo para Esquerda.`;
+                    curr.state = 'normal'; // Reseta antes de descer
+                    
+                    if (!curr.left) {
+                        curr.left = new Node(val);
+                        curr.left.state = 'found';
+                        statusText.innerText = `Inserido à esquerda de ${curr.value}`;
+                        statusText.className = "stats-value status-found";
+                        break;
+                    }
+                    curr = curr.left;
+                } 
+                else if (val > curr.value) {
+                    statusText.innerText = `${val} > ${curr.value}. Indo para Direita.`;
+                    curr.state = 'normal';
+                    
+                    if (!curr.right) {
+                        curr.right = new Node(val);
+                        curr.right.state = 'found';
+                        statusText.innerText = `Inserido à direita de ${curr.value}`;
+                        statusText.className = "stats-value status-found";
+                        break;
+                    }
+                    curr = curr.right;
+                } 
+                else {
+                    // Valor já existe
+                    curr.state = 'error';
+                    statusText.innerText = `Valor ${val} já existe na BST!`;
+                    statusText.className = "stats-value status-not-found";
+                    break;
+                }
+            }
+            
+            updateStats();
+            await sleep(getDelay());
+            resetVisualStates(bst.root);
+            setControlsState(false);
+            nodeValueInput.value = "";
+        }
+
+        async function iniciarBusca() {
+            const val = parseInt(nodeValueInput.value);
+            if (isNaN(val)) return;
+            if (!bst.root) return;
+
+            setControlsState(true);
+            resetVisualStates(bst.root);
+            numComparacoes = 0;
+            statusText.innerText = `Buscando ${val}...`;
+            statusText.className = "stats-value status-searching";
+
+            let curr = bst.root;
+            let found = false;
+
+            while (curr) {
+                curr.state = 'checking';
+                numComparacoes++;
+                updateStats();
+                await sleep(getDelay());
+
+                if (val === curr.value) {
+                    curr.state = 'found';
+                    statusText.innerText = `Alvo ${val} Encontrado! (O(log N))`;
+                    statusText.className = "stats-value status-found";
+                    found = true;
+                    break;
+                } else if (val < curr.value) {
+                    statusText.innerText = `${val} < ${curr.value}. Indo para Esquerda.`;
+                    curr.state = 'normal';
+                    curr = curr.left;
+                } else {
+                    statusText.innerText = `${val} > ${curr.value}. Indo para Direita.`;
+                    curr.state = 'normal';
+                    curr = curr.right;
+                }
+            }
+
+            if (!found) {
+                statusText.innerText = `Alvo ${val} NÃO Encontrado!`;
+                statusText.className = "stats-value status-not-found";
+            }
+
+            updateStats();
+            setControlsState(false);
+        }
+
+        // --- GERAÇÃO RÁPIDA (SEM ANIMAÇÃO LENTA) ---
+        function insertSilently(val) {
+            if (!bst.root) { bst.root = new Node(val); return; }
+            let curr = bst.root;
+            while (true) {
+                if (val < curr.value) {
+                    if (!curr.left) { curr.left = new Node(val); break; }
+                    curr = curr.left;
+                } else if (val > curr.value) {
+                    if (!curr.right) { curr.right = new Node(val); break; }
+                    curr = curr.right;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        function limparArvore() {
+            bst.root = null;
+            canvas.height = 450; // Reseta tamanho do canvas
+            statusText.innerText = "Árvore Limpa";
+            statusText.className = "stats-value";
+            numComparacoes = 0;
+            updateStats();
+        }
+
+        function gerarAleatoria() {
+            limparArvore();
+            // Raiz no meio para ajudar no balanceamento
+            insertSilently(50); 
+            // Gera ~12 nós aleatórios
+            for(let i=0; i<12; i++) {
+                insertSilently(Math.floor(Math.random() * 90) + 10);
+            }
+            statusText.innerText = "Árvore Aleatória Gerada (Caso Médio)";
+            updateStats();
+        }
+
+        function gerarDegenerada() {
+            limparArvore();
+            // Insere dados JÁ ORDENADOS. Isso mata o balanceamento da BST padrão.
+            const data = [10, 20, 30, 40, 50, 60, 70];
+            data.forEach(val => insertSilently(val));
+            
+            statusText.innerText = "Árvore Degenerada Gerada! (Pior Caso O(N))";
+            statusText.className = "stats-value status-not-found";
+            updateStats();
+        }
+
+        // Inicializa com uma arvore exemplo
+        gerarAleatoria();
+
+    </script>
+</body>
+</html>
