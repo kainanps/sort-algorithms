@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador Interativo de Grafos (Graph)</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        /* Painel de Controles */
+        .control-panel {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #e2e8f0;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .control-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            width: 100%;
+            margin-bottom: -5px;
+        }
+
+        input[type="text"] {
+            width: 80px;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        input[type="text"]:focus {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button.btn-primary {
+            background-color: #0284c7;
+            color: #ffffff;
+        }
+
+        button.btn-primary:hover {
+            background-color: #0369a1;
+        }
+
+        button.btn-success {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+
+        button.btn-success:hover {
+            background-color: #059669;
+        }
+
+        button.btn-secondary {
+            background-color: #8b5cf6;
+            color: #ffffff;
+        }
+
+        button.btn-secondary:hover {
+            background-color: #7c3aed;
+        }
+
+        button.btn-utils {
+            background-color: #64748b;
+            color: #ffffff;
+        }
+
+        button.btn-utils:hover {
+            background-color: #475569;
+        }
+
+        button:disabled {
+            background-color: #cbd5e1 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed;
+        }
+
+        /* Área do Canvas da Árvore */
+        .canvas-area {
+            background: #ffffff;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            overflow: hidden;
+            height: 500px;
+            border: 1px solid #e2e8f0;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        /* Instrução na Tela */
+        .canvas-hint {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(15, 23, 42, 0.75);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            line-height: 1.4;
+        }
+
+        /* Terminal de Logs */
+        .log-panel {
+            background-color: #0f172a;
+            color: #38bdf8;
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.6);
+            height: 160px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-header {
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .log-content {
+            overflow-y: auto;
+            flex-grow: 1;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+        }
+        
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+        .log-info { color: #38bdf8; }
+        .log-accent { color: #fbbf24; font-weight: bold; }
+
+        /* Estilização dos Elementos Gráficos SVG */
+        .node-circle {
+            fill: #0284c7;
+            stroke: #fff;
+            stroke-width: 3px;
+            cursor: grab;
+            transition: fill 0.3s, r 0.3s;
+        }
+
+        .node-circle:active {
+            cursor: grabbing;
+        }
+
+        .node-circle.selected {
+            stroke: #fbbf24;
+            stroke-width: 5px;
+            fill: #f59e0b;
+        }
+
+        .node-text {
+            fill: #ffffff;
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .edge-line {
+            stroke: #94a3b8;
+            stroke-width: 4px;
+            fill: none;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Simulador Interativo de Estrutura de Dados: Grafo (Graph)</h1>
+        <p>Crie nós, conecte-os criando relações e visualize o funcionamento interno dos algoritmos de busca BFS e DFS.</p>
+    </header>
+
+    <div class="main-container">
+        <div class="control-panel" id="controls">
+            
+            <div class="control-group">
+                <div class="control-label">Adicionar Elementos</div>
+                <input type="text" id="vertex-id" placeholder="Nó (Ex: A)" maxlength="3">
+                <button class="btn-primary" onclick="handleAddVertex()">Adicionar Nó</button>
+                
+                <input type="text" id="edge-source" placeholder="De (A)" maxlength="3" style="width: 60px; margin-left: 10px;">
+                <input type="text" id="edge-target" placeholder="Para (B)" maxlength="3" style="width: 60px;">
+                <button class="btn-success" onclick="handleAddEdge()">Conectar</button>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Algoritmos de Busca (Partindo do primeiro nó criado)</div>
+                <button class="btn-secondary" onclick="runTraversal('bfs')">Busca em Largura (BFS)</button>
+                <button class="btn-secondary" onclick="runTraversal('dfs')">Busca em Profundidade (DFS)</button>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Ações Globais</div>
+                <button class="btn-utils" onclick="resetGraph()">Reiniciar Padrão</button>
+                <button class="btn-utils" onclick="clearGraph()">Limpar Tela</button>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <div class="canvas-hint">
+                🖱️ <b>Clique duplo</b> no fundo para criar um nó automático.<br>
+                👆 <b>Clique em um nó e depois em outro</b> para criar uma conexão.<br>
+                🤝 <b>Arraste os nós</b> para testar o sistema de física de forças.
+            </div>
+            <svg id="graph-svg"></svg>
+        </div>
+
+        <div class="log-panel">
+            <div class="log-header">Console de Execução de Grafos</div>
+            <div class="log-content" id="log-output">
+                <div class="log-entry log-success">> Simulador de grafos carregado. Rede básica construída.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ESTRUTURA DE DADOS DO GRAFO ---
+        class Graph {
+            constructor() {
+                this.adjacencyList = new Map();
+            }
+
+            addVertex(vertex) {
+                if (!this.adjacencyList.has(vertex)) {
+                    this.adjacencyList.set(vertex, []);
+                    return true;
+                }
+                return false;
+            }
+
+            addEdge(vertex1, vertex2) {
+                if (this.adjacencyList.has(vertex1) && this.adjacencyList.has(vertex2)) {
+                    // Prevenção de duplicados na lista de adjacência
+                    if (!this.adjacencyList.get(vertex1).includes(vertex2)) {
+                        this.adjacencyList.get(vertex1).push(vertex2);
+                        this.adjacencyList.get(vertex2).push(vertex1); // Grafo Não-Direcionado
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            clear() {
+                this.adjacencyList.clear();
+            }
+        }
+
+        // --- INSTANCIAÇÃO E CONFIGURAÇÃO ---
+        const graph = new Graph();
+        
+        // Dados para renderização do D3
+        let nodes = [];
+        let links = [];
+        let selectedNodeForEdge = null;
+        let nextCharNode = 69; // Próximo caractere automático se o usuário der double click (Inicia em 'E')
+
+        const svg = d3.select("#graph-svg");
+        const width = svg.node().getBoundingClientRect().width || 1000;
+        const height = 500;
+
+        // Container para agrupar elementos e evitar problemas de ordem de renderização (linhas atrás de círculos)
+        const linksGroup = svg.append("g").attr("id", "links-layer");
+        const nodesGroup = svg.append("g").attr("id", "nodes-layer");
+
+        // Configuração da Simulação Física do D3
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(120))
+            .force("charge", d3.forceManyBody().strength(-400))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .on("tick", ticked);
+
+        // --- SISTEMA DE LOGS ---
+        function log(message, type = 'info') {
+            const consoleArea = document.getElementById("log-output");
+            const entry = document.createElement("div");
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `> ${message}`;
+            consoleArea.appendChild(entry);
+            consoleArea.scrollTop = consoleArea.scrollHeight;
+        }
+
+        // --- ATUALIZAÇÃO DA RENDERIZAÇÃO GRÁFICA (D3.JS) ---
+        function updateGraph() {
+            // 1. Atualização das Linhas (Arestas)
+            const l = linksGroup.selectAll(".edge-line")
+                .data(links, d => `${d.source.id || d.source}-${d.target.id || d.target}`);
+
+            l.exit().remove();
+
+            const lEnter = l.enter().append("line")
+                .attr("class", "edge-line")
+                .attr("id", d => `edge-${d.source}-${d.target}`);
+
+            const combinedLinks = l.merge(lEnter);
+
+            // 2. Atualização dos Grupos dos Nós (Círculo + Texto)
+            const n = nodesGroup.selectAll(".node-container")
+                .data(nodes, d => d.id);
+
+            n.exit().remove();
+
+            const nEnter = n.enter().append("g")
+                .attr("class", "node-container")
+                .attr("id", d => `node-g-${d.id}`)
+                .call(d3.drag() // Vincula o evento de arrastar à física
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended))
+                .on("click", (event, d) => handleNodeClick(d));
+
+            nEnter.append("circle")
+                .attr("class", "node-circle")
+                .attr("id", d => `circle-${d.id}`)
+                .attr("r", 22);
+
+            nEnter.append("text")
+                .attr("class", "node-text")
+                .attr("dy", ".35em")
+                .attr("text-anchor", "middle")
+                .text(d => d.id);
+
+            const combinedNodes = n.merge(nEnter);
+
+            // Reinicia e reaquece o motor de simulação física com os novos dados
+            simulation.nodes(nodes);
+            simulation.force("link").links(links);
+            simulation.alpha(1).restart();
+        }
+
+        // Função do motor físico que roda a cada frações de segundo alinhando posições x,y
+        function ticked() {
+            linksGroup.selectAll(".edge-line")
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            nodesGroup.selectAll(".node-container")
+                .attr("transform", d => `translate(${d.x}, ${d.y})`);
+        }
+
+        // --- MECÂNICAS DE INTERATIVIDADE E EVENTOS ---
+        
+        // Clique duplo na área vazia do SVG adiciona nó automático
+        svg.on("dblclick", function(event) {
+            if (event.target.tagName === "svg") {
+                const coords = d3.pointer(event);
+                const name = String.fromCharCode(nextCharNode);
+                if (nextCharNode <= 90) { // Limite do alfabeto de A-Z corporativo
+                    insertVertexData(name, coords[0], coords[1]);
+                    nextCharNode++;
+                } else {
+                    log("Limite alfabético de nós rápidos atingido. Use o campo manual.", "error");
+                }
+            }
+        });
+
+        // Clique em nós gerencia a criação rápida de arestas via cliques consecutivos
+        function handleNodeClick(nodeData) {
+            d3.event?.stopPropagation(); // Evita conflitos
+            
+            if (!selectedNodeForEdge) {
+                selectedNodeForEdge = nodeData.id;
+                d3.select(`#circle-${nodeData.id}`).classList?.add("selected");
+                d3.select(`#circle-${nodeData.id}`).attr("class", "node-circle selected");
+                log(`Nó de origem selecionado: [ ${selectedNodeForEdge} ]. Clique em outro nó para conectá-los.`, "info");
+            } else {
+                if (selectedNodeForEdge === nodeData.id) {
+                    // Deseleciona se clicar no mesmo
+                    d3.select(`#circle-${nodeData.id}`).attr("class", "node-circle");
+                    selectedNodeForEdge = null;
+                    log("Seleção cancelada.", "info");
+                } else {
+                    // Conecta os dois
+                    insertEdgeData(selectedNodeForEdge, nodeData.id);
+                    d3.select(`#circle-${selectedNodeForEdge}`).attr("class", "node-circle");
+                    selectedNodeForEdge = null;
+                }
+            }
+        }
+
+        // Funções internas para atualizar o modelo de dados puro E o modelo visual D3
+        function insertVertexData(id, customX = null, customY = null) {
+            id = id.toUpperCase().trim();
+            if(!id) return;
+
+            if (graph.addVertex(id)) {
+                nodes.push({ 
+                    id: id, 
+                    x: customX || width / 2 + (Math.random() * 40 - 20), 
+                    y: customY || height / 2 + (Math.random() * 40 - 20) 
+                });
+                log(`Vértice (Nó) [ ${id} ] adicionado à estrutura de dados.`, "success");
+                updateGraph();
+            } else {
+                log(`O nó [ ${id} ] já existe no grafo.`, "error");
+            }
+        }
+
+        function insertEdgeData(src, tgt) {
+            src = src.toUpperCase().trim();
+            tgt = tgt.toUpperCase().trim();
+
+            if (graph.addEdge(src, tgt)) {
+                links.push({ source: src, target: tgt });
+                log(`Aresta adicionada com sucesso conectando: [ ${src} ─── ${tgt} ]`, "success");
+                updateGraph();
+            } else {
+                log(`Falha ao conectar: Certifique-se de que ambos os nós existam e já não estejam conectados.`, "error");
+            }
+        }
+
+        // Chamadas dos botões de interface
+        function handleAddVertex() {
+            const input = document.getElementById("vertex-id");
+            insertVertexData(input.value);
+            input.value = "";
+        }
+
+        function handleAddEdge() {
+            const srcInput = document.getElementById("edge-source");
+            const tgtInput = document.getElementById("edge-target");
+            insertEdgeData(srcInput.value, tgtInput.value);
+            srcInput.value = "";
+            tgtInput.value = "";
+        }
+
+        // --- FUNÇÕES DE ARRASTAR (DRAG & DROP PHYSICS) ---
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // --- ALGORITMOS DE BUSCA (BFS E DFS ANIMADOS) ---
+        function runTraversal(algoType) {
+            if (nodes.length === 0) {
+                log("O grafo está completamente vazio.", "error");
+                return;
+            }
+
+            const startNode = nodes[0].id; // Inicia sempre no primeiro nó criado no array estável
+            const visitedOrder = [];
+            const visited = new Set();
+
+            if (algoType === 'bfs') {
+                // LÓGICA FILA (QUEUE) - Busca Em Largura
+                const queue = [startNode];
+                visited.add(startNode);
+
+                while(queue.length > 0) {
+                    const current = queue.shift();
+                    visitedOrder.push(current);
+
+                    const neighbors = graph.adjacencyList.get(current) || [];
+                    for(const neighbor of neighbors) {
+                        if (!visited.has(neighbor)) {
+                            visited.add(neighbor);
+                            queue.push(neighbor);
+                        }
+                    }
+                }
+                log(`Iniciando Busca em Largura (BFS) a partir de [ ${startNode} ]. (Usa uma FILA internamente)`, "info");
+            } else {
+                // LÓGICA RECURSIVA (PILHA/STACK) - Busca Em Profundidade
+                function dfsHelper(node) {
+                    visited.add(node);
+                    visitedOrder.push(node);
+                    const neighbors = graph.adjacencyList.get(node) || [];
+                    for(const neighbor of neighbors) {
+                        if (!visited.has(neighbor)) {
+                            dfsHelper(neighbor);
+                        }
+                    }
+                }
+                dfsHelper(startNode);
+                log(`Iniciando Busca em Profundidade (DFS) a partir de [ ${startNode} ]. (Usa uma PILHA/RECURSÃO internamente)`, "info");
+            }
+
+            // Bloquear a interface durante a execução pedagógica animada
+            setControlsState(false);
+            simulation.stop(); // Pausa a física temporariamente para focar na animação
+
+            let index = 0;
+            const stepDelay = 1000;
+
+            const interval = setInterval(() => {
+                // Restaura o nó anterior para cor estável de processado (Verde)
+                if (index > 0) {
+                    d3.select(`#circle-${visitedOrder[index - 1]}`).style("fill", "#10b981");
+                }
+
+                if (index < visitedOrder.length) {
+                    const currentNode = visitedOrder[index];
+                    log(`Nó processado atual: <span class="log-accent">${currentNode}</span>`, "info");
+
+                    // Destaca visualmente o nó ativo com cor Coral e efeito de escala
+                    d3.select(`#circle-${currentNode}`)
+                        .style("fill", "#f97316")
+                        .transition().duration(250).attr("r", 28)
+                        .transition().duration(250).attr("r", 22);
+
+                    index++;
+                } else {
+                    clearInterval(interval);
+                    log(`Busca Concluída! Caminho percorrido: [ ${visitedOrder.join(" ➔ ")} ]`, "success");
+                    
+                    // Restaura o estado padrão de estilos após exibição do resultado
+                    setTimeout(() => {
+                        d3.selectAll(".node-circle").style("fill", "#0284c7");
+                        setControlsState(true);
+                        simulation.alpha(0.3).restart(); // Devolve a autonomia à física de forças
+                    }, 2000);
+                }
+            }, stepDelay);
+        }
+
+        function setControlsState(enabled) {
+            const elements = document.querySelectorAll("#controls button, #controls input");
+            elements.forEach(el => el.disabled = !enabled);
+        }
+
+        // --- GERENCIAMENTO DE ESTADO GLOBAL ---
+        function resetGraph() {
+            clearGraph();
+            // Injeção de uma rede padrão em formato de anel com nó central para estudos
+            insertVertexData("A");
+            insertVertexData("B");
+            insertVertexData("C");
+            insertVertexData("D");
+            
+            insertEdgeData("A", "B");
+            insertEdgeData("B", "C");
+            insertEdgeData("C", "D");
+            insertEdgeData("D", "A");
+            insertEdgeData("A", "C"); // Conexão cruzada interna
+            
+            nextCharNode = 69; // 'E'
+            log("Rede padrão carregada para demonstração.", "success");
+        }
+
+        function clearGraph() {
+            graph.clear();
+            nodes = [];
+            links = [];
+            selectedNodeForEdge = null;
+            nextCharNode = 65; // Reseta alfabeto para 'A'
+            log("Grafo esvaziado. Adicione novos nós manualmente ou clicando duas vezes.", "info");
+            updateGraph();
+        }
+
+        // Inicialização primária com dados padrão
+        resetGraph();
+    </script>
+</body>
+</html>
