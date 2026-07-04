@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador Interativo: Disjoint Set (Union-Find)</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: #1e293b;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        .control-panel {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+            border: 1px solid #e2e8f0;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input[type="text"] {
+            width: 70px;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        button.btn-primary { background-color: #0284c7; }
+        button.btn-primary:hover { background-color: #0369a1; }
+        
+        button.btn-secondary { background-color: #8b5cf6; }
+        button.btn-secondary:hover { background-color: #7c3aed; }
+        
+        button.btn-utils { background-color: #64748b; }
+        button.btn-utils:hover { background-color: #475569; }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .canvas-area {
+            background: #ffffff;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            height: 450px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .log-panel {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .log-entry { font-size: 13px; margin-bottom: 5px; line-height: 1.4; }
+        .log-success { color: #4ade80; }
+        .log-info { color: #38bdf8; }
+        .log-warn { color: #fbbf24; }
+        .log-highlight { font-weight: bold; background: rgba(255,255,255,0.1); padding: 0 4px; border-radius: 3px; }
+
+        /* SVG Elements */
+        .node-circle {
+            stroke: #fff;
+            stroke-width: 2px;
+            transition: stroke-width 0.2s;
+        }
+        .node-text {
+            fill: white;
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+            user-select: none;
+        }
+        .link-line {
+            stroke-width: 3px;
+            fill: none;
+            transition: stroke-width 0.3s;
+        }
+        .highlighted-path {
+            stroke: #f43f5e !important;
+            stroke-width: 6px !important;
+        }
+        .highlighted-node {
+            stroke: #f43f5e !important;
+            stroke-width: 5px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Estrutura Disjoint Set (Union-Find)</h1>
+    </header>
+
+    <div class="main-container">
+        <div class="control-panel" id="controls">
+            <div class="control-group">
+                <div class="control-label">Operação: Union (Unir Conjuntos)</div>
+                <div class="control-row">
+                    <input type="text" id="union-x" placeholder="Nó 1" maxlength="1">
+                    <input type="text" id="union-y" placeholder="Nó 2" maxlength="1">
+                    <button class="btn-primary" onclick="handleUnion()">Executar Union</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Operação: Find (Achar Raiz)</div>
+                <div class="control-row">
+                    <input type="text" id="find-x" placeholder="Nó" maxlength="1">
+                    <button class="btn-secondary" onclick="handleFind()">Executar Find</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Otimizações</div>
+                <label class="checkbox-group">
+                    <input type="checkbox" id="path-compression" checked>
+                    <span>Ativar Compressão de Caminho</span>
+                </label>
+            </div>
+
+            <div class="control-group" style="margin-left: auto;">
+                <button class="btn-utils" onclick="initDSU()">Reiniciar Conjuntos</button>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <svg id="dsu-svg"></svg>
+        </div>
+
+        <div class="log-panel" id="log-output"></div>
+    </div>
+
+    <script>
+        // --- LÓGICA DO DISJOINT SET (UNION-FIND) ---
+        class UnionFind {
+            constructor(elements) {
+                this.parent = new Map();
+                // Cores únicas para cada representante de conjunto
+                this.colors = new Map(); 
+                const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+                
+                elements.forEach((el, i) => {
+                    this.parent.set(el, el); // Inicialmente, cada nó aponta para si mesmo (MakeSet)
+                    this.colors.set(el, colorScale(i));
+                });
+            }
+
+            // A operação Find clássica retorna o caminho percorrido para permitir animações
+            findWithPath(node, useCompression) {
+                let path = [];
+                let current = node;
+
+                // Sobe a árvore até encontrar a raiz (onde parent == current)
+                while (this.parent.get(current) !== current) {
+                    path.push(current);
+                    current = this.parent.get(current);
+                }
+                const root = current;
+                path.push(root);
+
+                // Aplica a compressão de caminho achatando a árvore
+                if (useCompression && path.length > 2) {
+                    // Todos os nós no caminho (exceto a raiz) agora apontam diretamente para a raiz
+                    for (let i = 0; i < path.length - 1; i++) {
+                        this.parent.set(path[i], root);
+                    }
+                }
+                return { root, path };
+            }
+
+            union(x, y, useCompression) {
+                const rootXInfo = this.findWithPath(x, false); // Apenas encontra para visualizar
+                const rootYInfo = this.findWithPath(y, false);
+                
+                const rootX = rootXInfo.root;
+                const rootY = rootYInfo.root;
+
+                if (rootX !== rootY) {
+                    // União simples: raiz de X passa a apontar para raiz de Y
+                    this.parent.set(rootX, rootY);
+                    return { success: true, rootX, rootY, pathX: rootXInfo.path, pathY: rootYInfo.path };
+                }
+                return { success: false, path: rootXInfo.path }; // Já estão no mesmo conjunto
+            }
+        }
+
+        // --- INTEGRAÇÃO COM D3.JS PARA VISUALIZAÇÃO ---
+        const initialNodes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        let dsu;
+        let visualNodes = [];
+        let visualLinks = [];
+
+        const svg = d3.select("#dsu-svg");
+        const width = svg.node().getBoundingClientRect().width;
+        const height = 450;
+        
+        const linksGroup = svg.append("g").attr("id", "links");
+        const nodesGroup = svg.append("g").attr("id", "nodes");
+
+        // Definição das setas direcionais (Filho -> Pai)
+        svg.append("defs").selectAll("marker")
+            .data(["arrow"])
+            .enter().append("marker")
+            .attr("id", String)
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 26) // Afasta a seta da borda do círculo
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("fill", "#64748b")
+            .attr("d", "M0,-5L10,0L0,5");
+
+        const simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(d => d.id).distance(80))
+            .force("charge", d3.forceManyBody().strength(-500))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("y", d3.forceY(height / 2).strength(0.05)) // Mantém centralizado
+            .on("tick", ticked);
+
+        function log(msg, type = "info") {
+            const panel = document.getElementById("log-output");
+            const div = document.createElement("div");
+            div.className = `log-entry log-${type}`;
+            div.innerHTML = `> ${msg}`;
+            panel.appendChild(div);
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        function initDSU() {
+            dsu = new UnionFind(initialNodes);
+            visualNodes = initialNodes.map(id => ({ id: id }));
+            visualLinks = [];
+            
+            document.getElementById("log-output").innerHTML = "";
+            log("Disjoint Set inicializado. Cada nó é seu próprio conjunto (MakeSet).", "success");
+            updateVisuals();
+        }
+
+        function syncLinksFromDSU() {
+            visualLinks = [];
+            initialNodes.forEach(node => {
+                const parent = dsu.parent.get(node);
+                if (parent !== node) {
+                    visualLinks.push({ source: node, target: parent });
+                }
+            });
+        }
+
+        function getSetColor(nodeId) {
+            // A cor de um nó é sempre a cor da raiz do seu conjunto atual
+            let current = nodeId;
+            while (dsu.parent.get(current) !== current) {
+                current = dsu.parent.get(current);
+            }
+            return dsu.colors.get(current);
+        }
+
+        function updateVisuals() {
+            syncLinksFromDSU();
+
+            // Atualização Links
+            const linkSelection = linksGroup.selectAll(".link-line")
+                .data(visualLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}`);
+
+            linkSelection.exit().remove();
+
+            const linkEnter = linkSelection.enter().append("line")
+                .attr("class", "link-line")
+                .attr("stroke", "#cbd5e1")
+                .attr("marker-end", "url(#arrow)");
+
+            linkSelection.merge(linkEnter);
+
+            // Atualização Nós
+            const nodeSelection = nodesGroup.selectAll(".node-container")
+                .data(visualNodes, d => d.id);
+
+            nodeSelection.exit().remove();
+
+            const nodeEnter = nodeSelection.enter().append("g")
+                .attr("class", "node-container")
+                .attr("id", d => `group-${d.id}`)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+
+            nodeEnter.append("circle")
+                .attr("class", "node-circle")
+                .attr("id", d => `node-${d.id}`)
+                .attr("r", 20);
+
+            nodeEnter.append("text")
+                .attr("class", "node-text")
+                .attr("dy", ".35em")
+                .attr("text-anchor", "middle")
+                .text(d => d.id);
+
+            const mergedNodes = nodeSelection.merge(nodeEnter);
+            
+            // Atualiza cores dinamicamente baseado na raiz atual
+            mergedNodes.select(".node-circle")
+                .transition().duration(500)
+                .attr("fill", d => getSetColor(d.id));
+
+            simulation.nodes(visualNodes);
+            simulation.force("link").links(visualLinks);
+            simulation.alpha(1).restart();
+        }
+
+        function ticked() {
+            linksGroup.selectAll(".link-line")
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            nodesGroup.selectAll(".node-container")
+                .attr("transform", d => `translate(${d.x}, ${d.y})`);
+        }
+
+        // Interações de Drag
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x; d.fy = d.y;
+        }
+        function dragged(event, d) {
+            d.fx = event.x; d.fy = event.y;
+        }
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null; d.fy = null;
+        }
+
+        // Lógica de UI - Animações de Find e Union
+        async function animatePath(path) {
+            for (let i = 0; i < path.length; i++) {
+                d3.select(`#node-${path[i]}`).classed("highlighted-node", true);
+                if (i < path.length - 1) {
+                    linksGroup.selectAll(".link-line")
+                        .filter(d => d.source.id === path[i] && d.target.id === path[i+1])
+                        .classed("highlighted-path", true);
+                }
+                await new Promise(r => setTimeout(r, 400));
+            }
+        }
+
+        function clearHighlights() {
+            d3.selectAll(".highlighted-node").classed("highlighted-node", false);
+            d3.selectAll(".highlighted-path").classed("highlighted-path", false);
+        }
+
+        function lockControls(locked) {
+            document.querySelectorAll('input, button').forEach(el => el.disabled = locked);
+        }
+
+        async function handleFind() {
+            const input = document.getElementById("find-x").value.toUpperCase();
+            document.getElementById("find-x").value = '';
+            if (!initialNodes.includes(input)) return log(`Nó inválido.`, "warn");
+
+            const useCompression = document.getElementById("path-compression").checked;
+            
+            lockControls(true);
+            log(`Iniciando FIND(${input})... Subindo a árvore até a raiz.`, "info");
+            
+            const { root, path } = dsu.findWithPath(input, useCompression);
+            
+            await animatePath(path);
+            
+            log(`Raiz do nó <span class="log-highlight">${input}</span> é <span class="log-highlight">${root}</span>.`, "success");
+
+            if (useCompression && path.length > 2) {
+                log(`Aplicando <span class="log-highlight">Compressão de Caminho</span>: ligando nós do percurso diretamente à raiz ${root}.`, "warn");
+                await new Promise(r => setTimeout(r, 600));
+                updateVisuals(); // Re-renderiza para mostrar os ponteiros encurtados
+            }
+
+            setTimeout(() => {
+                clearHighlights();
+                lockControls(false);
+            }, 1000);
+        }
+
+        async function handleUnion() {
+            const x = document.getElementById("union-x").value.toUpperCase();
+            const y = document.getElementById("union-y").value.toUpperCase();
+            document.getElementById("union-x").value = '';
+            document.getElementById("union-y").value = '';
+
+            if (!initialNodes.includes(x) || !initialNodes.includes(y)) return log(`Nós inválidos.`, "warn");
+            
+            lockControls(true);
+            log(`Iniciando UNION(${x}, ${y}). Localizando raízes...`, "info");
+
+            const useCompression = document.getElementById("path-compression").checked;
+            const res = dsu.union(x, y, false); // Executa a união na lógica
+
+            // Anima caminho de X
+            await animatePath(res.pathX || res.path);
+            clearHighlights();
+            // Anima caminho de Y
+            if(res.success) await animatePath(res.pathY);
+            clearHighlights();
+
+            if (res.success) {
+                log(`Raízes diferentes encontradas (${res.rootX} e ${res.rootY}). Unindo os conjuntos!`, "success");
+                log(`O representante <span class="log-highlight">${res.rootX}</span> agora aponta para <span class="log-highlight">${res.rootY}</span>.`, "info");
+                updateVisuals(); // Desenha a nova aresta e atualiza as cores do conjunto absorvido
+            } else {
+                const root = (res.pathX || res.path).slice(-1)[0];
+                log(`Os nós ${x} e ${y} já pertencem ao mesmo conjunto (Raiz: ${root}). O grafo não muda (previne ciclos).`, "warn");
+            }
+
+            // Executa compressões pendentes se ativado
+            if (useCompression) {
+                dsu.findWithPath(x, true);
+                dsu.findWithPath(y, true);
+                setTimeout(updateVisuals, 800);
+            }
+
+            lockControls(false);
+        }
+
+        // Inicializa ao abrir
+        initDSU();
+    </script>
+</body>
+</html>
