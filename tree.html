@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador Interativo de Árvore Binária de Busca (BST)</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        /* Painel de Controles */
+        .control-panel {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .control-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            width: 100%;
+            margin-bottom: -5px;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="number"]:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button.btn-primary {
+            background-color: #4f46e5;
+            color: #ffffff;
+        }
+
+        button.btn-primary:hover {
+            background-color: #4338ca;
+        }
+
+        button.btn-danger {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+
+        button.btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        button.btn-secondary {
+            background-color: #0ea5e9;
+            color: #ffffff;
+        }
+
+        button.btn-secondary:hover {
+            background-color: #0284c7;
+        }
+
+        button.btn-utils {
+            background-color: #64748b;
+            color: #ffffff;
+        }
+
+        button.btn-utils:hover {
+            background-color: #475569;
+        }
+
+        button:disabled {
+            background-color: #cbd5e1 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed;
+        }
+
+        /* Área do Canvas da Árvore */
+        .canvas-area {
+            background: #ffffff;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            overflow: hidden;
+            height: 500px;
+            border: 1px solid #e2e8f0;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Instrução de Zoom */
+        .zoom-hint {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(15, 23, 42, 0.6);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        /* Terminal de Logs */
+        .log-panel {
+            background-color: #0f172a;
+            color: #38bdf8;
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.6);
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-header {
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .log-content {
+            overflow-y: auto;
+            flex-grow: 1;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+        }
+        
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+        .log-info { color: #38bdf8; }
+        .log-accent { color: #fbbf24; font-weight: bold; }
+
+        /* Classes de Animação D3 */
+        .node-circle {
+            fill: #4f46e5;
+            stroke: #fff;
+            stroke-width: 3px;
+            transition: fill 0.3s, stroke 0.3s, r 0.3s;
+        }
+
+        .node-text {
+            fill: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .edge-line {
+            stroke: #cbd5e1;
+            stroke-width: 3px;
+            fill: none;
+            transition: stroke 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Simulador Interativo de Árvore Binária de Busca (BST)</h1>
+        <p>Insira valores, remova nós e execute os algoritmos de caminhamento para visualizar a reestruturação em tempo real.</p>
+    </header>
+
+    <div class="main-container">
+        <div class="control-panel" id="controls">
+            
+            <div class="control-group">
+                <div class="control-label">Manipulação de Nós</div>
+                <input type="number" id="node-value" placeholder="Valor" min="1" max="999">
+                <button class="btn-primary" onclick="handleInsert()">Inserir</button>
+                <button class="btn-danger" onclick="handleRemove()">Remover</button>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Algoritmos de Caminhamento</div>
+                <button class="btn-secondary" onclick="runTraversal('in')">Em-Ordem (In-Order)</button>
+                <button class="btn-secondary" onclick="runTraversal('pre')">Pré-Ordem (Pre-Order)</button>
+                <button class="btn-secondary" onclick="runTraversal('post')">Pós-Ordem (Post-Order)</button>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Ações globais</div>
+                <button class="btn-utils" onclick="resetTree()">Reiniciar</button>
+                <button class="btn-utils" onclick="clearTree()">Limpar Tudo</button>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <div class="zoom-hint">💡 Dica: Use o scroll para Zoom e arraste para navegar</div>
+            <svg id="bst-svg"></svg>
+        </div>
+
+        <div class="log-panel">
+            <div class="log-header">Console de Execução da Estrutura de Dados</div>
+            <div class="log-content" id="log-output">
+                <div class="log-entry log-success">> Simulador inicializado com sucesso. Valores padrão carregados.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CLASSES DA ESTRUTURA DE DADOS (BST) ---
+        class Node {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                // Coordenadas para renderização visual estática temporária
+                this.x = 0;
+                this.y = 0;
+            }
+        }
+
+        class BinarySearchTree {
+            constructor() {
+                this.root = null;
+            }
+
+            insert(value) {
+                const newNode = new Node(value);
+                if (!this.root) {
+                    this.root = newNode;
+                    return true;
+                }
+                return this._insertNode(this.root, newNode);
+            }
+
+            _insertNode(node, newNode) {
+                if (newNode.value === node.value) return false; // Duplicados não são aceitos na BST tradicional
+                
+                if (newNode.value < node.value) {
+                    if (!node.left) {
+                        node.left = newNode;
+                        return true;
+                    }
+                    return this._insertNode(node.left, newNode);
+                } else {
+                    if (!node.right) {
+                        node.right = newNode;
+                        return true;
+                    }
+                    return this._insertNode(node.right, newNode);
+                }
+            }
+
+            remove(value) {
+                let status = false;
+                const removeNode = (node, val) => {
+                    if (!node) return null;
+                    
+                    if (val < node.value) {
+                        node.left = removeNode(node.left, val);
+                        return node;
+                    } else if (val > node.value) {
+                        node.right = removeNode(node.right, val);
+                        return node;
+                    } else {
+                        status = true; // Encontrou o nó
+                        
+                        // Caso 1: Nó Folha (sem filhos)
+                        if (!node.left && !node.right) return null;
+                        
+                        // Caso 2: Nó com apenas um filho
+                        if (!node.left) return node.right;
+                        if (!node.right) return node.left;
+                        
+                        // Caso 3: Nó com dois filhos
+                        // Encontra o menor nó da subárvore direita (sucessor em-ordem)
+                        let aux = node.right;
+                        while (aux.left) {
+                            aux = aux.left;
+                        }
+                        node.value = aux.value;
+                        node.right = removeNode(node.right, aux.value);
+                        return node;
+                    }
+                };
+                this.root = removeNode(this.root, value);
+                return status;
+            }
+        }
+
+        // --- INICIALIZAÇÃO DE VARIÁVEIS GLOBAIS ---
+        const bst = new BinarySearchTree();
+        const defaultValues = [50, 30, 70, 20, 40, 60, 80];
+
+        // Configuração do ambiente D3
+        const svg = d3.select("#bst-svg");
+        const mainGroup = svg.append("g").attr("id", "main-view");
+
+        // Implementação do comportamento de Zoom e Pan
+        const zoomBehavior = d3.zoom()
+            .scaleExtent([0.4, 3])
+            .on("zoom", (event) => {
+                mainGroup.attr("transform", event.transform);
+            });
+        svg.call(zoomBehavior);
+
+        // --- FUNÇÕES DE LOG ---
+        function log(message, type = 'info') {
+            const consoleArea = document.getElementById("log-output");
+            const entry = document.createElement("div");
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `> ${message}`;
+            consoleArea.appendChild(entry);
+            consoleArea.scrollTop = consoleArea.scrollHeight;
+        }
+
+        // --- LÓGICA DE RENDERIZAÇÃO D3.JS ---
+        function updateVisualization() {
+            const nodesData = [];
+            const edgesData = [];
+
+            // Função recursiva para varrer a árvore e fixar as coordenadas matemáticas de renderização
+            function calculatePositions(node, x, y, dx, parentX = null, parentY = null) {
+                if (!node) return;
+
+                node.x = x;
+                node.y = y;
+                nodesData.push({ node, x, y, value: node.value });
+
+                if (parentX !== null && parentY !== null) {
+                    edgesData.push({
+                        id: `e-${node.value}`,
+                        source: { x: parentX, y: parentY },
+                        target: { x, y }
+                    });
+                }
+
+                // Ajusta o espaçamento horizontal proporcionalmente à profundidade (nível)
+                const verticalSpacing = 75;
+                calculatePositions(node.left, x - dx, y + verticalSpacing, dx * 0.45, x, y);
+                calculatePositions(node.right, x + dx, y + verticalSpacing, dx * 0.45, x, y);
+            }
+
+            // Centralização inicial baseada na largura dinâmica do container
+            const svgWidth = svg.node().getBoundingClientRect().width || 1000;
+            calculatePositions(bst.root, svgWidth / 2, 50, svgWidth / 4);
+
+            // --- RENDERIZAÇÃO DAS ARESTAS (LINHAS) ---
+            const links = mainGroup.selectAll(".edge-line")
+                .data(edgesData, d => d.id);
+
+            // Saída de arestas antigas
+            links.exit().remove();
+
+            // Entrada de novas arestas
+            const linksEnter = links.enter().append("line")
+                .attr("class", "edge-line")
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.source.x) // Inicia da posição do pai para efeito expansivo
+                .attr("y2", d => d.source.y);
+
+            // Transição e Atualização
+            links.merge(linksEnter)
+                .transition()
+                .duration(500)
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            // --- RENDERIZAÇÃO DOS NÓS (CÍRCULOS + TEXTOS) ---
+            const nodes = mainGroup.selectAll(".node-container")
+                .data(nodesData, d => d.value);
+
+            // Saída de nós antigos
+            nodes.exit().remove();
+
+            // Entrada de novos nós agrupados
+            const nodesEnter = nodes.enter().append("g")
+                .attr("class", "node-container")
+                .attr("id", d => `node-g-${d.value}`)
+                .attr("transform", d => `translate(${d.x}, ${d.y})`);
+
+            nodesEnter.append("circle")
+                .attr("class", "node-circle")
+                .attr("r", 20);
+
+            nodesEnter.append("text")
+                .attr("class", "node-text")
+                .attr("dy", ".35em")
+                .attr("text-anchor", "middle")
+                .text(d => d.value);
+
+            // Transição e Atualização de posições de nós existentes/novos
+            nodes.merge(nodesEnter)
+                .transition()
+                .duration(500)
+                .attr("transform", d => `translate(${d.x}, ${d.y})`);
+        }
+
+        // --- MANIPULADORES DE EVENTOS DE INTERFACE ---
+        function handleInsert() {
+            const input = document.getElementById("node-value");
+            const val = parseInt(input.value);
+            input.value = "";
+
+            if (isNaN(val)) {
+                log("Por favor, digite um número válido para inserção.", "error");
+                return;
+            }
+
+            const success = bst.insert(val);
+            if (success) {
+                log(`Nó com o valor [${val}] inserido com sucesso.`, "success");
+                updateVisualization();
+            } else {
+                log(`Operação negada: O valor [${val}] já existe na árvore.`, "error");
+            }
+        }
+
+        function handleRemove() {
+            const input = document.getElementById("node-value");
+            const val = parseInt(input.value);
+            input.value = "";
+
+            if (isNaN(val)) {
+                log("Por favor, digite um número válido para remoção.", "error");
+                return;
+            }
+
+            const success = bst.remove(val);
+            if (success) {
+                log(`Nó com o valor [${val}] removido com sucesso e árvore reestruturada.`, "success");
+                updateVisualization();
+            } else {
+                log(`Operação negada: O valor [${val}] não foi encontrado na árvore.`, "error");
+            }
+        }
+
+        // --- TRAVERSALS ANIMADOS (CAMINHAMENTOS) ---
+        function runTraversal(type) {
+            const sequence = [];
+            
+            // Funções de percurso recursivo
+            function preOrder(n) {
+                if (!n) return;
+                sequence.push(n.value);
+                preOrder(n.left);
+                preOrder(n.right);
+            }
+            function inOrder(n) {
+                if (!n) return;
+                inOrder(n.left);
+                sequence.push(n.value);
+                inOrder(n.right);
+            }
+            function postOrder(n) {
+                if (!n) return;
+                postOrder(n.left);
+                postOrder(n.right);
+                sequence.push(n.value);
+            }
+
+            if (type === 'pre') { preOrder(bst.root); log("Iniciando Caminhamento Pré-Ordem (Raiz -> Esquerda -> Direita)...", "info"); }
+            if (type === 'in') { inOrder(bst.root); log("Iniciando Caminhamento Em-Ordem (Esquerda -> Raiz -> Direita)...", "info"); }
+            if (type === 'post') { postOrder(bst.root); log("Iniciando Caminhamento Pós-Ordem (Esquerda -> Direita -> Raiz)...", "info"); }
+
+            if (sequence.length === 0) {
+                log("A árvore está vazia. Não há nós para caminhar.", "error");
+                return;
+            }
+
+            // Bloqueia controles de tela durante a animação pedagógica
+            setControlsState(false);
+
+            let index = 0;
+            const delay = 900; // Tempo em ms entre os passos do algoritmo
+
+            const interval = setInterval(() => {
+                // Remove destaque do nó anterior, pintando-o com a cor de visitado
+                if (index > 0) {
+                    d3.select(`#node-g-${sequence[index - 1]} .node-circle`)
+                        .style("fill", "#10b981"); // Verde esmeralda para nós já processados
+                }
+
+                if (index < sequence.length) {
+                    const activeVal = sequence[index];
+                    log(`Visitando Nó: <span class="log-accent">${activeVal}</span>`, "info");
+
+                    // Aplica destaque visual forte (Pulsação e cor Âmbar) ao nó atualmente processado
+                    d3.select(`#node-g-${activeVal} .node-circle`)
+                        .style("fill", "#f59e0b")
+                        .transition().duration(200).attr("r", 25)
+                        .transition().duration(200).attr("r", 20);
+
+                    index++;
+                } else {
+                    clearInterval(interval);
+                    log(`Caminhamento finalizado! Ordem resultante: [ ${sequence.join(" -> ")} ]`, "success");
+                    
+                    // Aguarda um pequeno momento para restaurar as cores originais da árvore
+                    setTimeout(() => {
+                        d3.selectAll(".node-circle").style("fill", "#4f46e5");
+                        setControlsState(true);
+                    }, 1500);
+                }
+            }, delay);
+        }
+
+        function setControlsState(enabled) {
+            const buttons = document.querySelectorAll("#controls button, #controls input");
+            buttons.forEach(element => element.disabled = !enabled);
+        }
+
+        // --- SISTEMA DE REINICIALIZAÇÃO ---
+        function resetTree() {
+            bst.root = null;
+            defaultValues.forEach(v => bst.insert(v));
+            log("Árvore restaurada para a configuração padrão estruturada.", "success");
+            updateVisualization();
+            // Reseta posições de visualização e zoom
+            svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity);
+        }
+
+        function clearTree() {
+            bst.root = null;
+            log("Todos os nós foram removidos. A árvore está limpa.", "info");
+            updateVisualization();
+        }
+
+        // Execução inicial padrão
+        defaultValues.forEach(v => bst.insert(v));
+        updateVisualization();
+
+    </script>
+</body>
+</html>
